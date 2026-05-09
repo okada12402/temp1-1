@@ -537,24 +537,52 @@ function loadData() {
 
 function loadSample() {
   const s = {
-    userId:"user_1777969771776_8671", nickname:"ryuji", score:128260, coins:21030,
-    inventory:{ time:1, score:1, shield:1, life:1, hammer:1 },
-    collections:["col_globe","col_nomiss"],
-    documents:["doc_1","doc_2","doc_3","doc_4","doc_5"],
-    lastDate:"2026/5/8", streak:1,
-    skills:["p_time","p_score","p_combo","p_shield"],
-    countryStats:{
-      "1":{"c":1,"w":1},"2":{"c":1,"w":0},"3":{"c":2,"w":0},
-      "18":{"c":1,"w":2},"21":{"c":1,"w":0},"24":{"c":2,"w":0},
-      "38":{"c":4,"w":0},"49":{"c":1,"w":0},"57":{"c":1,"w":0}
-    },
-    missions:{ date:"2026/5/8", list:[
-      { id:"m_score", desc:"1回の冒険で1000pt獲得", target:1000, reward:150, progress:0, claimed:false },
-      { id:"m_combo", desc:"3連続コンボを達成する", target:1,    reward:90,  progress:0, claimed:false },
-      { id:"m_boss",  desc:"ボスを1体倒す",         target:1,    reward:300, progress:0, claimed:false },
-    ]},
-    survivalMaxWave:15, survivalMaxCombo:11, hasClearedPangea:false, refundedDocPrice:true,
-  };
+  "userId": "user_0001_test",
+  "nickname": "user_1",
+  "score": 0,
+  "coins": 0,
+  "inventory": {},
+  "collections": [],
+  "documents": [],
+  "lastDate": "2026/5/8",
+  "streak": 0,
+  "skills": [],
+  "countryStats": {},
+  "missions": {
+    "date": "2026/5/8",
+    "list": [
+      {
+        "id": "m_boss",
+        "desc": "ボスを1体倒す",
+        "target": 1,
+        "reward": 300,
+        "progress": 0,
+        "claimed": false
+      },
+      {
+        "id": "m_survival",
+        "desc": "サバイバルを1回プレイ",
+        "target": 1,
+        "reward": 150,
+        "progress": 0,
+        "claimed": false
+      },
+      {
+        "id": "m_combo",
+        "desc": "3連続コンボを達成する",
+        "target": 1,
+        "reward": 90,
+        "progress": 0,
+        "claimed": false
+      }
+    ]
+  },
+  "survivalMaxWave": 0,
+  "survivalMaxCombo": 0,
+  "hasClearedPangea": false,
+  "refundedDocPrice": true,
+  "undefined": "0"
+}
   const jsonStr = JSON.stringify(s);
   if (inputMode === 'transfer') {
     document.getElementById('transferInput').value = btoa(encodeURIComponent(jsonStr));
