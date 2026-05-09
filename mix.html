@@ -258,6 +258,56 @@ input:disabled { background: #f0f2f7; color: #8892b0; cursor: not-allowed; }
     border-radius: 8px; padding: 10px 14px;
     font-size: 12px; color: #92400e; margin-bottom: 12px; line-height: 1.5;
 }
+
+/* ヒントボックス */
+.hint-box {
+    background: #f0f6ff; border: 1.5px solid #93c5fd;
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 12px; color: #1e40af; margin-bottom: 14px; line-height: 1.7;
+}
+.hint-box .hint-title {
+    font-weight: 700; font-size: 13px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px; color: #1a2a6c;
+}
+.hint-box ul { padding-left: 18px; margin: 4px 0; }
+.hint-box li { margin-bottom: 3px; }
+.hint-box .cond-ok  { color: #15803d; font-weight: 700; }
+.hint-box .cond-ng  { color: #b91c1c; font-weight: 700; }
+.hint-box .cond-num { color: #7c3aed; font-weight: 700; }
+
+/* パンゲア解放チェッカー */
+.pangea-checker {
+    background: linear-gradient(135deg, #1a2a6c 0%, #4a0e4e 100%);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; color: #fff;
+}
+.pangea-checker-title {
+    font-size: 14px; font-weight: 700; color: #fdbb2d;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.pangea-cond-list { list-style: none; padding: 0; margin: 0 0 10px; }
+.pangea-cond-list li {
+    padding: 5px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 8px;
+}
+.pangea-cond-list li:last-child { border-bottom: none; }
+.cond-circle { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+.cond-circle.ok  { background: #1db85c; }
+.cond-circle.ng  { background: #e74c3c; }
+.pangea-result { font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 8px; text-align: center; margin-top: 6px; }
+.pangea-result.cleared { background: #fdbb2d; color: #1a2a6c; }
+.pangea-result.ready   { background: #1db85c; color: #fff; }
+.pangea-result.notyet  { background: rgba(255,255,255,0.1); color: #ccc; }
+
+/* 古文書条件バッジ */
+.doc-cond-badge {
+    display: inline-block; font-size: 10px; padding: 2px 8px;
+    border-radius: 20px; margin-top: 3px; font-weight: 600;
+}
+.doc-cond-badge.score  { background: #ede9fe; color: #6d28d9; }
+.doc-cond-badge.country{ background: #ecfdf5; color: #065f46; }
+.doc-cond-badge.wave   { background: #fff7ed; color: #9a3412; }
+.doc-cond-badge.combo  { background: #fef2f2; color: #991b1b; }
+.doc-cond-badge.all    { background: #fefce8; color: #92400e; }
 </style>
 </head>
 <body>
@@ -299,9 +349,14 @@ input:disabled { background: #f0f2f7; color: #8892b0; cursor: not-allowed; }
       <textarea id="jsonInput" style="min-height:140px;" placeholder='{"userId":"...","nickname":"...","score":0,...}'></textarea>
     </div>
 
+    <div class="hint-box" style="margin-bottom:10px;">
+      <div class="hint-title">💡 引継ぎコードの取得方法</div>
+      ゲーム内 → 右上の <strong>「📲引継ぎ」</strong> → <strong>「📤 あなたの引継ぎコード (発行)」</strong> 欄に表示された英数字の文字列をコピーして、上のテキストエリアに貼り付けてください。
+      <br><span style="color:#b91c1c; font-weight:700;">⚠️ 復元すると元のデータは上書きされます。必ずコードのバックアップを取ってから作業してください。</span>
+    </div>
     <div class="btn-row">
       <button class="btn-primary" onclick="loadData()">📥 読み込む</button>
-      <button class="btn-ghost" onclick="loadSample()">🎮 サンプルを試す</button>
+      <button class="btn-ghost" onclick="loadSample()">🎮 サンプルを試す (ID等の干渉があるので非推奨)</button>
     </div>
     <div class="notice" id="msgArea"></div>
   </div>
@@ -326,15 +381,50 @@ input:disabled { background: #f0f2f7; color: #8892b0; cursor: not-allowed; }
     </div>
 
     <div class="section-panel active" id="panel-basic">
+      <div class="hint-box">
+        <div class="hint-title">🧑 基本情報について</div>
+        <ul>
+          <li><strong>スコア</strong>：称号やパンゲア解放条件に使用。1,000,000pt以上でパンゲア解放条件を満たす</li>
+          <li><strong>コイン</strong>：道具屋で古文書・アイテム購入に使用。古文書は各1,500コイン</li>
+          <li><strong>連続日数</strong>：7日連続でコレクション「不変の友情」を獲得</li>
+          <li><strong>称号</strong>はスコアに応じて自動変化（エディターで直接変更不可）</li>
+        </ul>
+      </div>
+      <div class="pangea-checker" id="pangeaChecker" style="display:none;">
+        <div class="pangea-checker-title">🌐 パンゲア解放チェッカー</div>
+        <ul class="pangea-cond-list" id="pangeaCondList"></ul>
+        <div class="pangea-result notyet" id="pangeaResult">データを読み込んでください</div>
+      </div>
       <div id="basicFields"></div>
     </div>
     <div class="section-panel" id="panel-inventory">
+      <div class="hint-box">
+        <div class="hint-title">🎒 アイテムについて</div>
+        <ul>
+          <li><strong>砂時計</strong>：バトル中にタイマーを遅くする。時間切れが怖い人向け</li>
+          <li><strong>王冠</strong>：その冒険のスコアを1.2倍にする</li>
+          <li><strong>盾</strong>：ボス戦の選択肢を減らす（最大8択→減少）</li>
+          <li><strong>命の雫</strong>：1回だけミスを無効化する（高難度で超便利）</li>
+          <li><strong>破城槌</strong>：ボスHPを最初から1削った状態でスタート</li>
+          <li><strong>真理の鍵</strong>：パンゲア解放条件を満たすと出現する究極アイテム</li>
+        </ul>
+      </div>
       <div class="edit-item">
         <div class="edit-label">🎒 アイテム所持数</div>
         <div class="inv-grid" id="invGrid"></div>
       </div>
     </div>
     <div class="section-panel" id="panel-skills">
+      <div class="hint-box">
+        <div class="hint-title">✨ パッシブスキルについて</div>
+        <ul>
+          <li>パッシブスキルは「スキル解放」から <strong>コインで恒久解放</strong> するもの（消耗品アイテムとは別）</li>
+          <li><strong>時の砂時計</strong>（1,500🪙）：全冒険でタイマーが常に0.8倍速</li>
+          <li><strong>黄金の王冠</strong>（2,000🪙）：全冒険でスコアが常に1.2倍</li>
+          <li><strong>勇者の剣</strong>（1,500🪙）：コンボが2連続から発動（通常は3連続）</li>
+          <li><strong>イージスの盾</strong>（3,000🪙）：全ボス戦で選択肢が常に少ない状態になる</li>
+        </ul>
+      </div>
       <div class="edit-item">
         <div class="edit-label">✨ 解放済みスキル（パッシブ）</div>
         <div class="edit-sublabel">チェックを入れると解放済み状態になります</div>
@@ -342,6 +432,17 @@ input:disabled { background: #f0f2f7; color: #8892b0; cursor: not-allowed; }
       </div>
     </div>
     <div class="section-panel" id="panel-collections">
+      <div class="hint-box">
+        <div class="hint-title">🏛️ コレクションについて</div>
+        <ul>
+          <li><strong>全コレクション所持</strong>がパンゲア解放条件のひとつ（5種類すべて必要）</li>
+          <li>🔮 <strong>賢者の地球儀</strong>：道具屋で1,000コインで購入可能（唯一の購入品）</li>
+          <li>🗺️ <strong>古の航海図</strong>：ボス・パンゲアバトルクリア時に <span class="cond-num">4%</span> の確率でドロップ</li>
+          <li>💎 <strong>ジオ皇帝の冠</strong>：同じく <span class="cond-num">4%</span> の確率でドロップ（航海図と排他抽選）</li>
+          <li>📅 <strong>不変の友情</strong>：7日間連続でゲームを起動するとその場で獲得</li>
+          <li>🛡️ <strong>アイギスの盾</strong>：ボスバトルを <strong>ノーミス</strong> でクリアすると獲得</li>
+        </ul>
+      </div>
       <div class="edit-item">
         <div class="edit-label">🏛️ コレクション（博物館所蔵品）</div>
         <div class="edit-sublabel">チェックを入れると所持状態になります</div>
@@ -349,6 +450,48 @@ input:disabled { background: #f0f2f7; color: #8892b0; cursor: not-allowed; }
       </div>
     </div>
     <div class="section-panel" id="panel-docs">
+      <div class="hint-box">
+        <div class="hint-title">📜 古文書の断片 ― 真理の鍵解放への道</div>
+        <ul>
+          <li>各断片は道具屋で <strong>🪙1,500コイン</strong> で購入できる</li>
+          <li>5枚揃えると「真理の鍵」入手条件を満たし、パンゲアバトルへの扉が開く</li>
+        </ul>
+        <div style="margin-top:8px; background:#fff8e6; border-radius:8px; padding:10px 12px; border:1px solid #fcd34d;">
+          <div style="font-weight:700; color:#92400e; margin-bottom:6px;">📖 各断片が示すゲーム内条件（ネタバレ）</div>
+          <table style="width:100%; border-collapse:collapse; font-size:11px; color:#1a1d2e;">
+            <tr style="background:#fff3cd;">
+              <th style="padding:4px 8px; text-align:left; border-radius:4px 0 0 0;">断片</th>
+              <th style="padding:4px 8px; text-align:left;">ヒント文</th>
+              <th style="padding:4px 8px; text-align:left; border-radius:0 4px 0 0;">実際の条件</th>
+            </tr>
+            <tr style="border-bottom:1px solid #fde68a;">
+              <td style="padding:5px 8px; color:#6d28d9; font-weight:700;">Ⅰ</td>
+              <td style="padding:5px 8px; color:#5a6080;">百万の力と全宝物を蓄えよ</td>
+              <td style="padding:5px 8px;">スコア <strong>1,000,000pt以上</strong> ＋ コレクション全所持</td>
+            </tr>
+            <tr style="border-bottom:1px solid #fde68a;">
+              <td style="padding:5px 8px; color:#6d28d9; font-weight:700;">Ⅱ</td>
+              <td style="padding:5px 8px; color:#5a6080;">全土を十度ずつ合致させよ</td>
+              <td style="padding:5px 8px;">全国（70カ国）を <strong>各10回以上正解</strong></td>
+            </tr>
+            <tr style="border-bottom:1px solid #fde68a;">
+              <td style="padding:5px 8px; color:#6d28d9; font-weight:700;">Ⅲ</td>
+              <td style="padding:5px 8px; color:#5a6080;">生き残りにて、五十波を越えよ</td>
+              <td style="padding:5px 8px;">サバイバルで <strong>50Wave以上</strong> 到達</td>
+            </tr>
+            <tr style="border-bottom:1px solid #fde68a;">
+              <td style="padding:5px 8px; color:#6d28d9; font-weight:700;">Ⅳ</td>
+              <td style="padding:5px 8px; color:#5a6080;">生き残りにて、二十の連撃を刻め</td>
+              <td style="padding:5px 8px;">サバイバルで <strong>20コンボ以上</strong> 達成</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px; color:#6d28d9; font-weight:700;">Ⅴ</td>
+              <td style="padding:5px 8px; color:#5a6080;">五つの断片が揃う時、真理の鍵への道は開く</td>
+              <td style="padding:5px 8px;">断片Ⅰ〜Ⅳを <strong>全て所持</strong>（自動充足）</td>
+            </tr>
+          </table>
+        </div>
+      </div>
       <div class="edit-item">
         <div class="edit-label">📜 古文書の断片</div>
         <div class="edit-sublabel">全5枚揃えると「真理の鍵」入手条件を満たせます（パンゲア解放の鍵）</div>
@@ -356,6 +499,15 @@ input:disabled { background: #f0f2f7; color: #8892b0; cursor: not-allowed; }
       </div>
     </div>
     <div class="section-panel" id="panel-country">
+      <div class="hint-box">
+        <div class="hint-title">🌍 国別統計について</div>
+        <ul>
+          <li><strong>正解数（✅）</strong>が <span class="cond-num">10以上</span> の国はパンゲア解放条件の「全土制覇」対象としてカウント</li>
+          <li>全70カ国すべてで正解10以上が必要。図書館タブで苦手国を確認できる</li>
+          <li>数値を直接編集することで特定の国のカウントを調整できる（不正解数も設定可能）</li>
+          <li>国名をタップすると入力欄が開く（折りたたみ式）</li>
+        </ul>
+      </div>
       <div class="edit-item">
         <div class="edit-label">🌍 国別の正解・不正解数</div>
         <input type="text" class="country-search" placeholder="🔍 国名で絞り込む..." oninput="filterCountries(this.value)">
@@ -368,9 +520,25 @@ input:disabled { background: #f0f2f7; color: #8892b0; cursor: not-allowed; }
       </div>
     </div>
     <div class="section-panel" id="panel-survival">
+      <div class="hint-box">
+        <div class="hint-title">🔥 サバイバルについて</div>
+        <ul>
+          <li><strong>最大到達Wave</strong>：<span class="cond-num">50以上</span> がパンゲア解放条件。1Wave = 1問正解</li>
+          <li><strong>最大コンボ数</strong>：<span class="cond-num">20以上</span> がパンゲア解放条件。連続正解でコンボが積み重なる</li>
+          <li>サバイバルモードはライフ3でスタート。ミスするたびにライフが減り0でゲームオーバー</li>
+          <li>Waveが進むにつれてタイマーが加速するので、後半は素早い判断が重要</li>
+        </ul>
+      </div>
       <div id="survivalFields"></div>
     </div>
     <div class="section-panel" id="panel-flags">
+      <div class="hint-box">
+        <div class="hint-title">🚩 フラグについて</div>
+        <ul>
+          <li><strong>パンゲアクリア済み</strong>：ONにすると称号が「🌌 マスター・オブ・パンゲア」になる。OFFにするとパンゲアバトルを再度挑戦可能な状態に戻る</li>
+          <li><strong>ドキュメント返金処理済み</strong>：FALSEにすると次回ゲーム起動時に古文書の差額コインが再度返金される。通常は変更不要</li>
+        </ul>
+      </div>
       <div id="flagFields"></div>
     </div>
   </div>
@@ -380,6 +548,15 @@ input:disabled { background: #f0f2f7; color: #8892b0; cursor: not-allowed; }
   ============================== -->
   <div class="card">
     <div class="card-title"><span>⚡</span> 生成・出力</div>
+    <div class="hint-box" style="margin-bottom:12px;">
+      <div class="hint-title">📤 ゲームへの反映手順</div>
+      <ol style="padding-left:18px; margin:4px 0;">
+        <li>下の「⚡ 生成する」を押して引継ぎコードを出力</li>
+        <li>「📋 コピー」でコードをコピー</li>
+        <li>ゲームを開き <strong>「📲引継ぎ」→「📥 コードを入力して復元」</strong> 欄にペーストして「復元」</li>
+      </ol>
+      <span style="color:#b91c1c; font-weight:700;">⚠️ 復元すると現在のゲームデータは上書きされます。元のコードは別途保管しておいてください。</span>
+    </div>
     <div class="btn-row" style="margin-bottom:14px;">
       <button class="btn-success" onclick="generateOutput()">⚡ 生成する</button>
     </div>
@@ -606,6 +783,7 @@ function buildEditor(data) {
   buildMissions(data.missions || { date:'', list:[] });
   buildSurvival(data);
   buildFlags(data);
+  buildPangeaChecker(data);
 }
 
 /* ─── サマリー ─── */
@@ -785,6 +963,77 @@ function buildCountryStats(stats) {
   }
 }
 
+function buildPangeaChecker(data) {
+  const checker = document.getElementById('pangeaChecker');
+  const list    = document.getElementById('pangeaCondList');
+  const result  = document.getElementById('pangeaResult');
+  checker.style.display = 'block';
+
+  const totalColItems = GAME_COLLECTIONS.length; // 5
+  const allCountryIds = Object.keys(COUNTRY_NAMES).map(Number);
+
+  const conds = [
+    {
+      label: 'スコア 1,000,000pt以上',
+      ok: data.score >= 1000000,
+      current: `現在: ${(data.score||0).toLocaleString()} pt`
+    },
+    {
+      label: `コレクション全${totalColItems}種所持`,
+      ok: (data.collections||[]).length >= totalColItems,
+      current: `現在: ${(data.collections||[]).length} / ${totalColItems} 種`
+    },
+    {
+      label: '全70カ国を各10回以上正解',
+      ok: allCountryIds.every(id => (data.countryStats||{})[id]?.c >= 10),
+      current: (() => {
+        const done = allCountryIds.filter(id => (data.countryStats||{})[id]?.c >= 10).length;
+        return `達成: ${done} / 70 カ国`;
+      })()
+    },
+    {
+      label: 'サバイバル 50Wave以上到達',
+      ok: (data.survivalMaxWave||0) >= 50,
+      current: `最大: ${data.survivalMaxWave||0} Wave`
+    },
+    {
+      label: 'サバイバル 20コンボ以上達成',
+      ok: (data.survivalMaxCombo||0) >= 20,
+      current: `最大: ${data.survivalMaxCombo||0} コンボ`
+    },
+    {
+      label: '古文書の断片 全5枚所持',
+      ok: (data.documents||[]).length >= 5,
+      current: `現在: ${(data.documents||[]).length} / 5 枚`
+    },
+  ];
+
+  list.innerHTML = '';
+  conds.forEach(c => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span class="cond-circle ${c.ok ? 'ok' : 'ng'}">${c.ok ? '✓' : '✗'}</span>
+      <span style="flex:1;">${c.label}</span>
+      <span style="font-size:11px; color:${c.ok ? '#86efac' : '#fca5a5'};">${c.current}</span>
+    `;
+    list.appendChild(li);
+  });
+
+  const allOk = conds.every(c => c.ok);
+  if (data.hasClearedPangea) {
+    result.textContent = '🌌 パンゲアクリア済み！おめでとう！';
+    result.className = 'pangea-result cleared';
+  } else if (allOk) {
+    result.textContent = '✅ 全条件クリア！真理の鍵を使ってパンゲアに挑もう！';
+    result.className = 'pangea-result ready';
+  } else {
+    const remain = conds.filter(c => !c.ok).length;
+    result.textContent = `⏳ あと ${remain} 個の条件を達成しよう`;
+    result.className = 'pangea-result notyet';
+  }
+}
+
+
 function filterCountries(q) {
   document.querySelectorAll('#countryGrid .country-card').forEach(c => {
     c.style.display = (!q||c.dataset.countryName.includes(q)) ? '' : 'none';
@@ -963,5 +1212,19 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
 </script>
+
+<div style="max-width:980px; margin:0 auto; padding:0 16px 32px;">
+  <div style="background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:12px; padding:14px 18px; font-size:11px; line-height:1.8; text-align:center;">
+    <div style="color:rgba(255,255,255,0.4); margin-bottom:8px;">
+      💡 <strong style="color:rgba(255,255,255,0.5);">裏ワザ情報</strong>　<span style="color:rgba(255,100,100,0.7); font-weight:700;">⚠️ ネタバレ注意</span>　自力でクリアしたい人は見ないでね
+    </div>
+    <div id="spoilerBox" style="filter:blur(6px); transition:filter 0.3s; cursor:pointer; user-select:none; color:rgba(255,255,255,0.5);"
+      onclick="this.style.filter='none'; document.getElementById('spoilerHint').style.display='none';">
+      勇者の名前を <code style="background:rgba(255,255,255,0.08); padding:2px 7px; border-radius:4px; color:rgba(255,220,100,0.8); font-size:11px;">アゲナ３１</code> にすると真理の鍵が無条件で入手できますよ 😏
+    </div>
+    <div id="spoilerHint" style="color:rgba(255,255,255,0.25); font-size:10px; margin-top:6px;">👆 タップで表示</div>
+  </div>
+</div>
+
 </body>
 </html>
