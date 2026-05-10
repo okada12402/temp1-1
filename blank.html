@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<!-- saved from url=(0099)https://n-vqhkejs637fcdr5bbsregga2h2ljnle2p4wyajq-0lu-script.googleusercontent.com/userCodeAppPanel -->
+<html lang="ja"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script src="./jsapi"></script><script>window.parent.maeExportApis_();</script>
+
+
+  <!--<base target="_top">--><base href="." target="_top">
+  
+  <title>地理クエスト 〜 アルティメット・パンゲア 〜</title>
+  <script src="./confetti.browser.min.js.ダウンロード"></script>
+  <style>
+     
+    :root { 
+      --bg: #1a2a6c; --accent: #fdbb2d; --selected: #2ecc71; 
+      --danger: #e74c3c; --combo: #ff4757; --boss: #8b0000; --pangea: #4a0e4e;
+      --coin: #ffd700; --rare: #a29bfe;
+    }
+    body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; text-align: center; transition: background 0.5s; overflow-x: hidden; }
+    
+    body.boss-mode-active { background: var(--boss); }
+    body.pangea-mode-active { background: var(--pangea); }
+
+    #game-outer { max-width: 600px; margin: 0 auto; background: rgba(0,0,0,0.85); border-radius: 15px; padding: 15px; position: relative; border: 2px solid var(--accent); transition: 0.3s; box-sizing: border-box;}
+    
+    @keyframes shake { 0%, 100% { transform: translateX(0) translateY(0); } 20%, 60% { transform: translateX(-10px) translateY(5px); } 40%, 80% { transform: translateX(10px) translateY(-5px); } }
+    @keyframes pangea-shake { 0% {transform: translate(2px, 1px) rotate(0deg);} 10% {transform: translate(-1px, -2px) rotate(-1deg);} 20% {transform: translate(-3px, 0px) rotate(1deg);} 30% {transform: translate(0px, 2px) rotate(0deg);} 100% {transform: translate(1px, -2px) rotate(-1deg);} }
+    @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+    @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0.7; } }
+    @keyframes heartbeat { 0% { transform: scale(1); } 15% { transform: scale(1.03); } 30% { transform: scale(1); } 45% { transform: scale(1.03); } 60% { transform: scale(1); } }
+    
+    .shake-active { animation: shake 0.4s; box-shadow: 0 0 40px var(--danger) !important; border-color: var(--danger) !important; }
+    .mut-pangea #game-outer { animation: pangea-shake 0.5s infinite; filter: hue-rotate(90deg); border-color: #ff00ff; }
+    .mut-invert #game-outer { filter: invert(1) hue-rotate(180deg); }
+    .mut-blind #timer-container { opacity: 0; }
+    
+    .heartbeat-active { animation: heartbeat 1s infinite; border-color: var(--danger) !important; box-shadow: 0 0 30px var(--danger) !important; }
+
+    #damage-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle, rgba(255,0,0,0) 50%, rgba(255,0,0,0.6) 100%);
+      opacity: 0; pointer-events: none; z-index: 9998; transition: opacity 0.5s ease-out;
+    }
+
+     
+    #progress-header { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+    .stat-box { text-align: center; margin: 0 5px; }
+    .stat-label { font-size: 10px; color: var(--accent); }
+    .stat-value { font-size: 16px; font-weight: bold; }
+    .coin-value { color: var(--coin); }
+    .rank-display { font-size: 18px !important; font-weight: 900; color: #ffd700; text-shadow: 0 0 8px rgba(255, 215, 0, 0.8), 1px 1px 1px #000; animation: pop 2s infinite alternate; }
+
+    .header-mini-btn { background: #34495e; color: #fff; border: 1px solid var(--accent); padding: 3px 8px; border-radius: 20px; font-size: 10px; cursor: pointer; transition: 0.2s; position: absolute; z-index: 1000; }
+    #sound-toggle-btn { top: -12px; right: -5px; }
+    #sound-toggle-btn.sound-on { background: #2ecc71; border-color: #27ae60; color: #000; font-weight: bold; }
+    #pause-btn { top: -12px; left: -5px; background: #e67e22; border-color: #d35400; }
+    #pause-btn:hover { background: #d35400; }
+
+     
+    #pause-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; align-items: center; justify-content: center; flex-direction: column; color: #fff; cursor: pointer; }
+    .pause-text { font-size: 32px; font-weight: bold; letter-spacing: 5px; animation: pulse 1.5s infinite; color: var(--accent); }
+
+     
+    #novel-modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9); z-index: 10001; display: none;
+      flex-direction: column; justify-content: center; align-items: center;
+      overflow: hidden;
+    }
+    #novel-background {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover; z-index: -1; display: none;
+      filter: blur(2px) brightness(0.6); 
+    }
+    #novel-image {
+      max-height: 40vh; max-width: 90%; object-fit: contain; margin-bottom: 20px;
+      animation: pulse 2s infinite alternate;
+      position: relative; z-index: 1; 
+    }
+    #novel-window {
+      width: 90%; max-width: 600px; background: rgba(0, 0, 10, 0.85);
+      border: 2px solid #ffd700; border-radius: 10px; padding: 20px;
+      position: relative; text-align: left; box-sizing: border-box;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+      min-height: 140px; cursor: pointer;
+      z-index: 2; 
+    }
+    #novel-speaker {
+      position: absolute; top: -15px; left: 10px; background: #ffd700;
+      color: #000; font-weight: bold; padding: 4px 12px; border-radius: 5px; font-size: 14px;
+    }
+    #novel-text {
+      font-size: 15px; line-height: 1.6; color: #fff; white-space: pre-wrap;
+    }
+    #novel-next-icon {
+      position: absolute; bottom: 10px; right: 15px; font-size: 18px;
+      color: #ffd700; animation: pop 1s infinite alternate; display: none;
+    }
+
+     
+    .tab-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap;}
+    .tab-btn { flex: 1; min-width: 60px; padding: 10px 5px; font-size: 11px; border-radius: 8px; border: none; cursor: pointer; background: #34495e; color: white; }
+    .tab-btn.active { background: var(--accent); color: #000; font-weight: bold; }
+    .sub-screen { display: none; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px; max-height: 70vh; overflow-y: auto; }
+
+    .grid-items { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .item-card { background: #2c3e50; border-radius: 8px; padding: 5px; font-size: 10px; cursor: pointer; border: 2px solid transparent; position: relative; box-sizing: border-box;}
+    .item-card.selected { border-color: var(--selected); box-shadow: 0 0 10px var(--selected); }
+    .item-card.locked { opacity: 0.6; filter: grayscale(1); }
+    .item-icon { font-size: 24px; display: block; margin-bottom: 2px; }
+    .item-price { color: var(--coin); font-weight: bold; }
+    .badge { position: absolute; top: -5px; right: -5px; background: var(--combo); padding: 2px 5px; border-radius: 10px; font-size: 9px; }
+
+     
+    #play-screen { display: flex; flex-direction: column; height: 100%; }
+
+    #sticky-header { position: sticky; top: 0; z-index: 100; background: var(--bg); padding: 5px 0; border-bottom: 2px solid rgba(255, 255, 255, 0.2); box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: background 0.5s; max-height: 70vh; display: flex; flex-direction: column; flex-shrink: 0; }
+    body.boss-mode-active #sticky-header { background: var(--boss); padding: 2px 0; }
+    body.pangea-mode-active #sticky-header { background: var(--pangea); padding: 2px 0; }
+
+    #wave-display { font-size: 14px; font-weight: bold; color: #fff; background: #333; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--accent); margin-bottom: 5px; display: inline-block; transition: 0.3s; }
+    
+    #timer-container { width: 100%; height: 8px; background: #333; border-radius: 4px; margin-bottom: 5px; overflow: hidden; display: none; border: 1px solid #fff; box-sizing: border-box; }
+    #timer-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #00d2d3, #1dd1a1); transition: width 0.1s linear, background 0.3s; }
+    .timer-danger { background: linear-gradient(90deg, #ff9f43, #ee5253) !important; }
+    
+    #combo-display { position: absolute; right: 10px; top: -10px; font-size: 20px; color: var(--combo); font-weight: bold; text-shadow: 0 0 10px #fff; display: none; z-index: 10; }
+    .combo-pop { animation: pop 0.3s ease-out; }
+
+    #target-area { padding: 5px; background: rgba(255,255,255,0.1); border-radius: 8px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+    #target-label { font-size: 28px; font-weight: bold; line-height: 1.2; margin: 0; }
+    .feature-text-box { overflow-wrap: break-word; word-wrap: break-word; width: 100%; box-sizing: border-box; padding: 5px; line-height: 1.4; max-height: 100px; overflow-y: auto; font-size: 18px !important; background: rgba(0,0,0,0.3); border-radius: 4px; }
+    
+    #map-container { display: none; margin-top: 5px; background: white; padding: 5px; border-radius: 8px; width: 100%; max-width: 90%; text-align: center; box-sizing: border-box; }
+    
+    #target-image { max-width: 100%; max-height: 25vh; height: auto; object-fit: contain; display: none; }
+    .hide-right-half { clip-path: inset(0 50% 0 0); object-fit: cover !important; object-position: left center; width: auto !important; }
+    body.map-only-mode #target-image { max-height: 35vh; }
+
+    #image-loading-text { font-weight: bold; color: #3498db; padding: 10px; text-align: center; animation: pulse 1.5s infinite; font-size: 12px; }
+
+    #boss-hp-container { display: none; width: 90%; margin: 5px auto; }
+    #hp-label { font-size: 10px; font-weight: bold; color: #ff4757; }
+    #boss-hp-bar { width: 100%; height: 10px; background: #222; border: 1px solid #fff; border-radius: 6px; overflow: hidden; position: relative; box-sizing: border-box; }
+    #boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff4757, #ff6b81); transition: width 0.3s ease-out; }
+    .pangea-hp { background: linear-gradient(90deg, #9b59b6, #8e44ad) !important; }
+
+     
+    #boss-image-display { height: auto; max-height: 22vh; width: 100%; object-fit: contain; margin-bottom: 5px; animation: pop 1s infinite alternate; display: none; }
+
+    .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; flex-grow: 1; }
+    .card { aspect-ratio: 2; background: #fff; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; border: 3px solid transparent; transition: 0.2s; padding: 3px; overflow: hidden; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    .card img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+    .card-text { font-size: 14px; font-weight: bold; color: #2c3e50; pointer-events: none; text-align: center; line-height: 1.2; padding: 2px;}
+
+    @media screen and (max-height: 600px) {
+      #target-label { font-size: 20px; }
+      #target-image { max-height: 20vh; }
+      body.map-only-mode #target-image { max-height: 25vh; }
+      #boss-image-display { max-height: 15vh; }  
+      .card-text { font-size: 12px; }
+    }
+
+     
+    .menu-btn { display: block; width: 100%; padding: 10px; margin: 5px 0; font-size: 14px; font-weight: bold; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--accent); border-radius: 8px; cursor: pointer; }
+    .action-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; font-size: 15px; font-weight: bold; background: rgba(255,255,255,0.1); color: white; border: 2px solid var(--accent); border-radius: 10px; cursor: pointer; }
+    select.menu-select { width: 100%; padding: 8px; margin-bottom: 10px; font-size: 12px; border-radius: 8px; background: #34495e; color: white; border: 1px solid var(--accent); box-sizing: border-box;}
+    #feedback { font-size: 16px; font-weight: bold; margin-top: 10px; min-height: 40px; color: #f1c40f; text-shadow: 1px 1px 2px #000; line-height: 1.4; }
+
+    #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #333; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #e0e0e0; border-top-color: #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; align-items: center; justify-content: center; flex-direction: column; background: rgba(0,0,0,0.9); }
+    .modal-content { background: #2c3e50; padding: 20px; border-radius: 15px; border: 2px solid var(--accent); width: 85%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-sizing: border-box; }
+    
+    #boss-warning-screen { z-index: 9000; }
+    .boss-warning-box { background-color: #8b0000; padding: 20px; border-radius: 10px; border: 3px solid #ff4500; text-align: center; max-width: 90%; }
+    .boss-warning-box h2 { color: #ffd700; margin-top: 0; font-size: 18px; animation: flash 1s infinite alternate; }
+    .boss-rules { text-align: left; line-height: 1.6; margin: 15px 0; font-size: 12px; }
+    .boss-btn { background-color: #ffd700; color: #000; font-weight: bold; padding: 12px 24px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; }
+
+    #pangea-modal { background: rgba(74, 14, 78, 0.95); z-index: 9001; }
+    .warning-text { font-size: 30px; font-weight: bold; color: yellow; margin-bottom: 10px; animation: pop 0.5s infinite alternate;}
+
+    .shop-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 8px; margin-bottom: 8px; border-radius: 8px; text-align: left;}
+    .shop-btn { background: #e67e22; border: none; padding: 6px 12px; color: white; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px; }
+    .shop-btn:disabled { background: #555; cursor: not-allowed; }
+    .review-item { display: flex; align-items: center; background: #fff; color: #000; padding: 5px; margin-bottom: 5px; border-radius: 5px; text-align: left;}
+    .review-item img { height: 30px; width: 50px; object-fit: contain; margin-right: 10px; }
+    .skill-badge { display: inline-block; background: #34495e; padding: 4px 8px; border-radius: 15px; font-size: 10px; margin: 2px; border: 1px solid #f39c12; }
+    #ranking-board { background: rgba(0,0,0,0.6); border: 1px solid #ffd700; border-radius: 8px; padding: 10px; margin-top: 15px; }
+    .rank-list { list-style: none; padding: 0; margin: 0; text-align: left; }
+    .rank-item { display: flex; justify-content: space-between; padding: 4px; border-bottom: 1px dashed #555; font-size: 12px; }
+    .weak-list { list-style: none; padding: 0; margin: 0; text-align: left; }
+  </style>
+</head>
+<body>
+  <div id="damage-overlay"></div>
+  <audio id="bgm-audio" loop="" src=""></audio>
+
+  <div id="novel-modal" onclick="handleNovelTap()">
+    <img id="novel-background" src="https://n-vqhkejs637fcdr5bbsregga2h2ljnle2p4wyajq-0lu-script.googleusercontent.com/userCodeAppPanel" alt="bg">
+    <img id="novel-image" src="https://n-vqhkejs637fcdr5bbsregga2h2ljnle2p4wyajq-0lu-script.googleusercontent.com/userCodeAppPanel" alt="character">
+    <div id="novel-window">
+      <div id="novel-speaker"></div>
+      <div id="novel-text"></div>
+      <div id="novel-next-icon">▼</div>
+    </div>
+  </div>
+
+  <div id="pause-overlay" onclick="togglePause()">
+    <div class="pause-text">⏸️ PAUSE</div>
+    <div style="font-size: 14px; margin-top: 15px; color: #ccc;">(画面をタップして再開)</div>
+  </div>
+
+  <div id="loading-screen" style="display: none;">
+    <div class="spinner"></div>
+    <p id="loading-message">🌍 世界のデータを読み込み中...</p>
+  </div>
+
+  <div id="transfer-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 style="color:#3498db; font-size:18px; margin-top:0;">⚙️ データ引継ぎ</h2>
+      <p style="font-size:10px; color:#ccc; line-height:1.4;">他の端末へデータを移行できます。<br>※引継ぐと現在の端末のデータは上書きされます。</p>
+      <div style="margin: 15px 0; text-align: left; background:rgba(0,0,0,0.3); padding:10px; border-radius:8px;">
+        <label style="font-size:12px; color:var(--accent); font-weight:bold;">📤 あなたの引継ぎコード (発行)</label>
+        <textarea id="export-code" readonly="" style="width:100%; height:60px; font-size:10px; background:#222; color:#fff; border:1px solid #ccc; border-radius:4px; padding:5px; box-sizing:border-box; word-break:break-all; margin-top:5px;"></textarea>
+        <button class="action-btn" style="padding:8px; font-size:12px; margin-top:8px; background:#f39c12; border-color:#e67e22; border-radius:20px;" onclick="copyTransferCode()">📋 コードをコピーする</button>
+      </div>
+      <hr style="border-color:#555;">
+      <div style="margin: 15px 0; text-align: left; background:rgba(0,0,0,0.3); padding:10px; border-radius:8px;">
+        <label style="font-size:12px; color:#2ecc71; font-weight:bold;">📥 コードを入力して復元 (読込)</label>
+        <textarea id="import-code" placeholder="ここに引継ぎコードを貼り付け" style="width:100%; height:60px; font-size:10px; background:#fff; color:#000; border:1px solid #ccc; border-radius:4px; padding:5px; box-sizing:border-box; margin-top:5px;"></textarea>
+        <button class="action-btn" style="padding:6px; font-size:11px; margin-top:5px; background: #27ae60; border-color: #2ecc71;" onclick="applyTransferCode()">✨ データを復元する</button>
+      </div>
+      <button class="action-btn" style="padding:8px; font-size:12px; margin-top:10px; background:#555; border-color:#777;" onclick="document.getElementById(&#39;transfer-modal&#39;).style.display=&#39;none&#39;">閉じる</button>
+    </div>
+  </div>
+
+  <div id="boss-warning-screen" class="modal-overlay">
+    <div class="boss-warning-box">
+      <h2>⚠️ 巨大ボス襲来 ⚠️</h2>
+      <img id="warning-boss-image" src="https://n-vqhkejs637fcdr5bbsregga2h2ljnle2p4wyajq-0lu-script.googleusercontent.com/userCodeAppPanel" alt="boss" style="max-height: 25vh; max-width: 100%; object-fit: contain; margin: 10px 0; animation: pop 1.5s infinite alternate;">
+      <ul class="boss-rules">
+        <li>ボスは<strong>第三形態</strong>まで変化し、妨害してくる！</li>
+        <li>選択肢が<strong>最大8つ</strong>に増大！惑わされるな！</li>
+        <li>ヒントなしの状態で弱点を突き続けろ！</li>
+      </ul>
+      <button id="start-boss-btn" class="boss-btn">バトル開始！</button>
+    </div>
+  </div>
+
+  <div id="pangea-modal" class="modal-overlay">
+    <div class="warning-text" style="color:#ff00ff;">🌐 特異点検知 🌐</div>
+    <img id="warning-pangea-image" src="https://n-vqhkejs637fcdr5bbsregga2h2ljnle2p4wyajq-0lu-script.googleusercontent.com/userCodeAppPanel" alt="pangea" style="max-height: 25vh; max-width: 100%; object-fit: contain; margin: 10px 0; animation: pulse 1.5s infinite alternate;">
+    <div style="font-size:20px; font-weight:bold; color:white;">キャプテン・パンゲア</div>
+    <div style="font-size:12px; color:#ccc; margin-top:10px; text-align:left; line-height:1.6; max-width:90%; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px;">
+      「よくぞここまで辿り着きました。<br><br>
+      ……ですが、私の導き出した理論は揺るぎません。世界を再び単一の大地――『超大陸パンゲア』へと回帰させ、混沌とした文明を再定義（リブート）する。それがこの星にとっての最善解です。<br><br>
+      もし、この分かたれた世界にまだ多様性が必要だというなら、あなたの『知性』という名の証明で、私の絶対数式（ジオ・ロジック）を覆してみせなさい。<br><br>
+      さあ、光の届かぬ漆黒の深淵――『アトラス・オルタ』へと沈みなさい。」
+    </div>
+  </div>
+
+  <div id="library-detail-modal" class="modal-overlay" onclick="this.style.display=&#39;none&#39;">
+    <div class="modal-content" style="text-align:center;" onclick="event.stopPropagation()">
+      <h2 id="lib-detail-name" style="color:#3498db; margin-top:0; font-size: 22px;">国名</h2>
+      <img id="lib-detail-img" src="https://n-vqhkejs637fcdr5bbsregga2h2ljnle2p4wyajq-0lu-script.googleusercontent.com/userCodeAppPanel" style="max-width:100%; max-height:30vh; object-fit:contain; margin-bottom:10px; background:white; padding:5px; border-radius:8px;">
+      <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; text-align:left; font-size:12px; margin-bottom:10px; line-height:1.5;">
+        <div style="color:#f1c40f; font-weight:bold; margin-bottom:3px;">🌟 特徴</div>
+        <div id="lib-detail-feature" style="margin-bottom:10px; color:#fff;"></div>
+        <div style="color:#e67e22; font-weight:bold; margin-bottom:3px;">🏛️ 首都</div>
+        <div id="lib-detail-capital" style="margin-bottom:10px; color:#fff;"></div>
+        <div style="color:#2ecc71; font-weight:bold; margin-bottom:3px;">💡 豆知識</div>
+        <div id="lib-detail-trivia" style="color:#fff;"></div>
+      </div>
+      <button class="action-btn" style="padding:8px; font-size:12px;" onclick="document.getElementById(&#39;library-detail-modal&#39;).style.display=&#39;none&#39;">閉じる</button>
+    </div>
+  </div>
+
+  <div id="treasure-modal" class="modal-overlay" onclick="closeTreasure()">
+    <div style="font-size: 60px; margin-bottom: 10px;">🎁</div>
+    <div id="treasure-text" style="font-size: 16px; color: var(--accent); font-weight: bold; white-space: pre-wrap; line-height:1.5;"></div>
+    <div style="font-size: 12px; margin-top: 20px; color: #ccc;">(タップして次へ)</div>
+  </div>
+
+  <div id="review-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 style="color:#e74c3c; font-size:18px;">📝 復習ノート</h2>
+      <p style="font-size:12px;">今回の探索で間違えた国々です。地図だけで場所を覚えよう！</p>
+      <div id="review-list" style="margin: 10px 0; text-align: left;"></div>
+      <button class="action-btn" onclick="closeReview()">タイトルへ戻る</button>
+    </div>
+  </div>
+
+  <div id="skill-shop-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 style="color:var(--accent); font-size:18px;">🛡️ 勇者のスキル屋</h2>
+      <p style="font-size:12px;">現在のスコア: <span id="shop-score-display" style="color:var(--selected); font-weight:bold;">0</span> pt</p>
+      <div id="shop-items-container" style="margin: 10px 0;"></div>
+      <button class="action-btn" onclick="document.getElementById(&#39;skill-shop-modal&#39;).style.display=&#39;none&#39;">店を出る</button>
+    </div>
+  </div>
+
+  <div id="game-outer">
+    <div id="progress-header">
+      <button id="pause-btn" class="header-mini-btn" onclick="togglePause()">⏸️ ポーズ</button>
+      <button id="sound-toggle-btn" class="header-mini-btn" onclick="toggleSound()">🔇 サウンドOFF</button>
+      <div class="stat-box" style="flex-grow:1;">
+        <div class="stat-label">称号</div>
+        <div class="rank-display" id="player-rank" style="background: linear-gradient(to right, rgb(255, 0, 0), rgb(75, 0, 130), rgb(148, 0, 211)) text; color: transparent;">♾️ ジオ・マスター</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">総スコア</div>
+        <div class="stat-value" id="score-display">20,000,000,000,012,644</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">ジオコイン</div>
+        <div class="stat-value coin-value" id="coin-display">0</div>
+      </div>
+    </div>
+
+    <div id="start-screen" style="display: block;">
+      <div style="margin-bottom: 10px; display: flex; justify-content: center; align-items: center; gap: 5px; font-size:12px;">
+        <div>勇者：<span id="player-name-display" style="color:var(--selected); font-weight:bold;">アゲナ３１</span> (継続:<span id="streak-display">1</span>日)</div>
+        <button style="background:#34495e; color:white; border:1px solid #bdc3c7; border-radius:4px; font-size:9px; padding:2px 6px; cursor:pointer;" onclick="changeName()">✏️変更</button>
+        <button style="background:#8e44ad; color:white; border:1px solid #9b59b6; border-radius:4px; font-size:9px; padding:2px 6px; cursor:pointer;" onclick="openTransfer()">📲引継ぎ</button>
+      </div>
+
+      <div class="tab-container">
+        <button class="tab-btn active" onclick="showSub(&#39;play&#39;)">冒険</button>
+        <button class="tab-btn" onclick="showSub(&#39;mission&#39;)" style="color:var(--accent);">📋 課題</button>
+        <button class="tab-btn" onclick="showSub(&#39;shop&#39;)">道具屋</button>
+        <button class="tab-btn" onclick="showSub(&#39;collection&#39;)">博物館</button>
+        <button class="tab-btn" onclick="showSub(&#39;library&#39;)">📚 図書館</button>
+      </div>
+
+      <div id="sub-play" class="sub-content" style="display: block;">
+        <div style="display:flex; justify-content:space-between; text-align:left; font-size:10px; margin-bottom:10px; gap:10px;">
+          <div style="flex:1; background:rgba(255,255,255,0.1); padding:5px; border-radius:5px;">
+            🎒 <b>装備</b> (タップで選択)<br>
+            <div id="inv-grid" class="grid-items" style="grid-template-columns: repeat(2, 1fr); margin-top:5px; gap:5px;"><div class="item-card "><span class="item-icon">🗝️</span><span style="font-size:8px;">真理の鍵</span><span class="badge">x16</span></div></div>
+          </div>
+          <div style="flex:1; background:rgba(255,255,255,0.1); padding:5px; border-radius:5px;">
+            ✨ <b>パッシブ</b><br>
+            <div id="skills-list" style="margin-top:5px; min-height:30px;"><span style="color:#7f8c8d;">なし</span></div>
+            <button style="margin-top:5px; width:100%; font-size:9px; padding:2px;" onclick="openSkillShop()">スキル解放</button>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:5px; margin-bottom: 10px;">
+          <div style="flex:1;">
+            <label style="font-size:9px; color:var(--accent);">🎯 難易度</label>
+            <select id="difficulty-select" class="menu-select">
+              <option value="all">すべて</option>
+              <option value="初級">🔰 初級</option>
+              <option value="中級">⚔️ 中級</option>
+              <option value="上級">🔥 上級</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:9px; color:var(--accent);">🌍 エリア</label>
+            <select id="region-select" class="menu-select">
+              <option value="all">全世界</option>
+              <option value="アジア">アジア</option>
+              <option value="ヨーロッパ">欧州</option>
+              <option value="アフリカ">アフリカ</option>
+              <option value="北アメリカ">北米</option>
+              <option value="南アメリカ">南米</option>
+              <option value="オセアニア">オセアニア</option>
+            </select>
+          </div>
+        </div>
+        
+        <button class="menu-btn" style="border-color:#3498db; color:#3498db;" onclick="startRun(&#39;textToMap&#39;)">🗺️ 国名から地図を探す</button>
+        <button class="menu-btn" style="border-color:#e67e22; color:#e67e22;" onclick="startRun(&#39;mapOnlyToText&#39;)">🔍 地図のみで当てる</button>
+        <button class="menu-btn" style="border-color:#2ecc71; color:#2ecc71;" onclick="startRun(&#39;mapToText&#39;)">📝 地図や国旗から国名を当てる</button>
+        <button class="menu-btn" style="border-color:#9b59b6; color:#9b59b6;" onclick="startRun(&#39;specialtyToText&#39;)">🎁 特徴から国名を当てる</button>
+        <button class="menu-btn" style="border-color:#1abc9c; color:#1abc9c;" onclick="startRun(&#39;capitalMode&#39;)">🏛️ 国名と地図から首都を当てる</button>
+        
+        <hr style="border-color:#555; margin:15px 0;">
+        <button class="menu-btn" style="border-color:#ff4757; color:#ff4757; background:rgba(255,71,87,0.1); animation:pulse 2s infinite;" onclick="startRun(&#39;survival&#39;)">🔥 サバイバルモード (無限・ミス3回で終了)</button>
+
+        <div id="ranking-board">
+          <h3 style="color:#ffd700; margin:0 0 5px 0; font-size:12px;">👑 トップ5 👑　(人をいじる、下ネタ等の不適切な登録名は指導対象です。)</h3>
+          <ul class="rank-list" id="ranking-list"><li class="rank-item"><span>🥇 エンディング見ました</span><span>10,000,000,000,013,476pt</span></li><li class="rank-item"><span>🥈 にいあさ</span><span>4,986,856pt</span></li><li class="rank-item"><span>🥉 セキセイのハルクイン</span><span>4,778,658pt</span></li><li class="rank-item"><span>4位 リィナ</span><span>4,186,705pt</span></li><li class="rank-item"><span>5位 暇人です()</span><span>3,873,052pt</span></li></ul>
+        </div>
+      </div>
+
+      <div id="sub-mission" class="sub-screen" style="display: none;">
+        <h4 style="margin:0 0 10px 0; color:var(--accent); font-size:14px;">📋 今日のミッション</h4>
+        <div style="font-size:10px; color:#ccc; margin-bottom:10px;">毎日ランダムな課題をクリアして報酬をゲットしよう！</div>
+        <div id="mission-grid"><div class="shop-item"><div><b>3連続コンボを達成する</b><br><small style="color:var(--coin);">報酬: 🪙90</small></div><div><span style="font-size:12px;font-weight:bold;color:#ccc;">0 / 1</span></div></div><div class="shop-item"><div><b>1回の冒険で1000pt獲得</b><br><small style="color:var(--coin);">報酬: 🪙150</small></div><div><span style="font-size:12px;font-weight:bold;color:#ccc;">0 / 1000</span></div></div><div class="shop-item"><div><b>ボスを1体倒す</b><br><small style="color:var(--coin);">報酬: 🪙300</small></div><div><span style="font-size:12px;font-weight:bold;color:#ccc;">0 / 1</span></div></div></div>
+      </div>
+
+      <div id="sub-shop" class="sub-screen" style="display: none;">
+        <h4 style="margin:0 0 10px 0; color:var(--coin); font-size:14px;">🛒 ジオショップ</h4>
+        <div id="shop-grid" class="grid-items"><div class="item-card "><span class="item-icon">⏳</span><div style="font-weight:bold;font-size:11px;">砂時計</div><div style="font-size:8px; color:#aaa; margin:2px 0;">タイマー遅延</div><span class="item-price">🪙50</span></div><div class="item-card "><span class="item-icon">👑</span><div style="font-weight:bold;font-size:11px;">王冠</div><div style="font-size:8px; color:#aaa; margin:2px 0;">スコア1.2倍</div><span class="item-price">🪙80</span></div><div class="item-card "><span class="item-icon">🛡️</span><div style="font-weight:bold;font-size:11px;">盾</div><div style="font-size:8px; color:#aaa; margin:2px 0;">ボス選択肢減少</div><span class="item-price">🪙70</span></div><div class="item-card "><span class="item-icon">💖</span><div style="font-weight:bold;font-size:11px;">命の雫</div><div style="font-size:8px; color:#aaa; margin:2px 0;">ミス無効(1回)</div><span class="item-price">🪙150</span></div><div class="item-card "><span class="item-icon">💣</span><div style="font-weight:bold;font-size:11px;">破城槌</div><div style="font-size:8px; color:#aaa; margin:2px 0;">ボスHP-1</div><span class="item-price">🪙120</span></div><div class="item-card "><span class="item-icon">📜</span><div style="font-weight:bold;font-size:11px;">古文書の断片 I</div><div style="font-size:8px; color:#aaa; margin:2px 0;">【百万の力と全宝物を蓄えよ】</div><span class="item-price">🪙1500</span></div><div class="item-card "><span class="item-icon">📜</span><div style="font-weight:bold;font-size:11px;">古文書の断片 II</div><div style="font-size:8px; color:#aaa; margin:2px 0;">【全土を十度ずつ合致させよ】</div><span class="item-price">🪙1500</span></div><div class="item-card "><span class="item-icon">📜</span><div style="font-weight:bold;font-size:11px;">古文書の断片 III</div><div style="font-size:8px; color:#aaa; margin:2px 0;">【生き残りにて、五十波を越えよ】</div><span class="item-price">🪙1500</span></div><div class="item-card "><span class="item-icon">📜</span><div style="font-weight:bold;font-size:11px;">古文書の断片 IV</div><div style="font-size:8px; color:#aaa; margin:2px 0;">【生き残りにて、二十の連撃を刻め】</div><span class="item-price">🪙1500</span></div><div class="item-card "><span class="item-icon">📜</span><div style="font-weight:bold;font-size:11px;">古文書の断片 V</div><div style="font-size:8px; color:#aaa; margin:2px 0;">【五つの断片が揃う時、真理の鍵への道は開く】</div><span class="item-price">🪙1500</span></div><div class="item-card "><span class="item-icon">🗝️</span><div style="font-weight:bold;font-size:11px;">真理の鍵</div><div style="font-size:8px; color:#aaa; margin:2px 0;">究極の試練へ</div><span class="item-price">🪙0</span></div><div class="item-card "><span class="item-icon">🔮</span><div style="font-weight:bold;font-size:11px;">賢者の地球儀</div><div style="font-size:8px; color:#aaa; margin:2px 0;">博物館所蔵品</div><span class="item-price">🪙1000</span></div></div>
+      </div>
+
+      <div id="sub-collection" class="sub-screen" style="display: none;">
+        <h4 style="margin:0 0 10px 0; color:var(--rare); font-size:14px;">🏛️ ジオ博物館</h4>
+        <div id="collection-grid" class="grid-items"><div class="item-card locked"><span class="item-icon">❓</span><div style="font-size:9px; font-weight:bold; color:#ccc; background:rgba(0,0,0,0.6); padding: 2px; border-radius: 4px; display: inline-block; margin-top:2px;">🔒条件: 道具屋</div></div><div class="item-card locked"><span class="item-icon">❓</span><div style="font-size:9px; font-weight:bold; color:#ccc; background:rgba(0,0,0,0.6); padding: 2px; border-radius: 4px; display: inline-block; margin-top:2px;">🔒条件: ボス撃破</div></div><div class="item-card locked"><span class="item-icon">❓</span><div style="font-size:9px; font-weight:bold; color:#ccc; background:rgba(0,0,0,0.6); padding: 2px; border-radius: 4px; display: inline-block; margin-top:2px;">🔒条件: ボス撃破</div></div><div class="item-card locked"><span class="item-icon">❓</span><div style="font-size:9px; font-weight:bold; color:#ccc; background:rgba(0,0,0,0.6); padding: 2px; border-radius: 4px; display: inline-block; margin-top:2px;">🔒条件: ７日連続プレイ</div></div><div class="item-card locked"><span class="item-icon">❓</span><div style="font-size:9px; font-weight:bold; color:#ccc; background:rgba(0,0,0,0.6); padding: 2px; border-radius: 4px; display: inline-block; margin-top:2px;">🔒条件: ボスノーミス</div></div></div>
+      </div>
+
+      <div id="sub-library" class="sub-screen" style="display: none;">
+        <h4 style="margin:0 0 5px 0; color:#3498db; font-size:14px;">📚 パンゲア図書館</h4>
+        <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px; margin-bottom: 10px;">
+          <h5 style="color:var(--danger); margin:0 0 5px 0; font-size:12px;">👿 苦手な国 (ワースト5)</h5>
+          <ul id="weak-countries-list" class="weak-list"><li>まだありません</li></ul>
+        </div>
+        <div style="font-size:10px; color:#ccc; margin-bottom:10px;">※一度でも正解した国は、タップで詳細を見られます。</div>
+        <div id="library-grid" class="grid-items" style="grid-template-columns: repeat(3, 1fr); gap: 8px;"><div id="lib-card-1" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./日本.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">日本</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-2" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./中国.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">中国</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-3" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./韓国.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">韓国</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-4" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./インド.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">インド</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-5" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./インドネシア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">インドネシア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-6" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./サウジアラビア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">サウジアラビア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-7" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./トルコ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">トルコ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-8" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./タイ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">タイ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-9" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ベトナム.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ベトナム</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-10" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./フィリピン.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">フィリピン</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-11" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./マレーシア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">マレーシア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-12" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./シンガポール.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">シンガポール</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-13" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./バングラデシュ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">バングラデシュ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-14" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./パキスタン.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">パキスタン</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-15" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./イラン.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">イラン</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-16" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./アラブ首長国連邦.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">アラブ首長国連邦</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-17" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./イスラエル.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">イスラエル</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-18" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./モンゴル.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">モンゴル</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-19" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./イギリス.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">イギリス</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-20" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./フランス.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">フランス</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-21" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ドイツ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ドイツ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-22" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./イタリア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">イタリア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-23" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./スペイン.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">スペイン</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-24" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ロシア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ロシア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-25" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./オランダ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">オランダ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-26" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./スイス.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">スイス</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-27" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ベルギー.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ベルギー</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-28" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ギリシャ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ギリシャ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-29" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./オーストリア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">オーストリア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-30" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./スウェーデン.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">スウェーデン</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-31" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ノルウェー.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ノルウェー</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-32" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./フィンランド.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">フィンランド</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-33" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./デンマーク.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">デンマーク</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-34" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ポーランド.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ポーランド</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-35" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ウクライナ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ウクライナ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-36" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./アイスランド.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">アイスランド</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-71" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ポルトガル.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ポルトガル</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-37" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./エジプト.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">エジプト</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-38" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./南アフリカ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">南アフリカ共和国</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-39" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ナイジェリア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ナイジェリア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-40" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ケニア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ケニア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-41" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./エチオピア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">エチオピア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-42" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./モロッコ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">モロッコ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-43" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./アルジェリア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">アルジェリア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-44" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ガーナ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ガーナ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-45" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./コートジボワール.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">コートジボワール</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-46" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./コンゴ民主共和国.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">コンゴ民主共和国</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-47" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./タンザニア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">タンザニア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-48" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./マダガスカル.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">マダガスカル</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-49" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./アメリカ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">アメリカ合衆国</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-50" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./カナダ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">カナダ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-51" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./メキシコ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">メキシコ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-52" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./キューバ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">キューバ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-53" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ジャマイカ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ジャマイカ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-54" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./パナマ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">パナマ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-55" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./コスタリカ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">コスタリカ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-56" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./グアテマラ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">グアテマラ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-57" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ブラジル.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ブラジル</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-58" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./アルゼンチン.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">アルゼンチン</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-59" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ペルー.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ペルー</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-60" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./チリ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">チリ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-61" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./コスタリカ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">コロンビア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-62" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ベネズエラ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ベネズエラ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-63" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./エクアドル.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">エクアドル</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-64" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ボリビア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ボリビア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-65" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./パラグアイ.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">パラグアイ</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-66" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./オーストラリア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">オーストラリア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-67" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ニュージーランド.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ニュージーランド</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-68" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./パプアニューギニア.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">パプアニューギニア</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-69" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./フィジー.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">フィジー</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div><div id="lib-card-70" class="item-card" data-c="0" style="border-color: rgb(51, 51, 51);"><img src="./ツバル.png" style="width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;" onerror="this.style.display=&#39;none&#39;"><div style="font-size:8px;color:#7f8c8d; margin-top:2px;">ツバル</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">未発見</div></div></div>
+      </div>
+    </div>
+
+    <div id="play-screen" style="display:none;">
+      <div id="sticky-header">
+        <div id="wave-display">WAVE 1 / 10</div>
+        <div id="timer-container"><div id="timer-fill"></div></div>
+        
+        <div id="target-area">
+          <div id="combo-display">2 COMBO!</div>
+          <div id="map-container">
+            <div id="image-loading-text">🌍 受信中...</div>
+            <img id="target-image" src="https://n-vqhkejs637fcdr5bbsregga2h2ljnle2p4wyajq-0lu-script.googleusercontent.com/userCodeAppPanel" alt="map">
+          </div>
+          <div id="target-label">お題</div>
+          <div id="boss-hp-container">
+            <img id="boss-image-display" src="https://n-vqhkejs637fcdr5bbsregga2h2ljnle2p4wyajq-0lu-script.googleusercontent.com/userCodeAppPanel" alt="boss">
+            <div id="hp-label">BOSS HP</div>
+            <div id="boss-hp-bar"><div id="boss-hp-fill"></div></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="options-grid" id="grid-options"></div>
+      
+      <div id="feedback"></div>
+      <button id="withdraw-btn" class="action-btn" style="margin-top:10px; font-size:12px; padding:6px; border-color:#ccc; color:#ccc;" onclick="endRun(false)">撤退する</button>
+    </div>
+  </div>
+
+  <script>
+    
+    
+    
+    const CURRENT_VERSION = 'geoGameV1.9.13'; 
+    const sessionTime = Date.now();
+
+    const BOSS_IMAGES = {
+      beginner1: "https://drive.google.com/thumbnail?id=1_y9OvgKSBNnc29bqENy-tK7aoJc8HYYU&sz=w780", 
+      beginner2: "https://drive.google.com/thumbnail?id=1_y9OvgKSBNnc29bqENy-tK7aoJc8HYYU&sz=w780", 
+      mid1: "https://drive.google.com/thumbnail?id=1t6K_hALCjpJlQeauIw9jT3s3_zMlIwf7&sz=w780", 
+      mid2: "https://drive.google.com/thumbnail?id=1t6K_hALCjpJlQeauIw9jT3s3_zMlIwf7&sz=w780", 
+      advanced: "https://drive.google.com/thumbnail?id=1KzAuQXlyHDCqCEhSU3Ma4BwCxvkHIF-V&sz=w780", 
+      legendary: "https://drive.google.com/thumbnail?id=1AD9DOKtbo21-Dhdwuo4EDX_kDnycv4FF&sz=w780",
+      legendary2: "https://drive.google.com/thumbnail?id=1d1687f7lb7K7gvuHBtQ29CnAxM9-yzXC&sz=w1280",
+      legendary3: "https://drive.google.com/thumbnail?id=1RF1afSovyKI0-zCsy6pqQENuQntNlVKd&sz=w1280",
+      legendary4: "https://drive.google.com/thumbnail?id=1sLtbnZAIJTmYfxMM07Kp5FqMi9oe4Poa&sz=w1280",
+      legendary5: "https://drive.google.com/thumbnail?id=1j03JP73Cj1DbxVGqnmMcyxtlxeRTPC5Y&sz=w1280",
+      legendary6: "https://drive.google.com/thumbnail?id=1cOmv7vh5QtyQG8xUODu9z_1eLlCFV8RK&sz=w1280"
+    };
+
+    const ITEMS = {
+      'time': { icon: '⏳', name: "砂時計", desc: "タイマー遅延", price: 50, type: 'use' },
+      'score': { icon: '👑', name: "王冠", desc: "スコア1.2倍", price: 80, type: 'use' },
+      'shield': { icon: '🛡️', name: "盾", desc: "ボス選択肢減少", price: 70, type: 'use' },
+      'life': { icon: '💖', name: "命の雫", desc: "ミス無効(1回)", price: 150, type: 'use' },
+      'hammer': { icon: '💣', name: "破城槌", desc: "ボスHP-1", price: 120, type: 'use' },
+      'doc_1': { icon: '📜', name: "古文書の断片 I", desc: "【百万の力と全宝物を蓄えよ】", price: 1500, type: 'doc' },
+      'doc_2': { icon: '📜', name: "古文書の断片 II", desc: "【全土を十度ずつ合致させよ】", price: 1500, type: 'doc' },
+      'doc_3': { icon: '📜', name: "古文書の断片 III", desc: "【生き残りにて、五十波を越えよ】", price: 1500, type: 'doc' },
+      'doc_4': { icon: '📜', name: "古文書の断片 IV", desc: "【生き残りにて、二十の連撃を刻め】", price: 1500, type: 'doc' },
+      'doc_5': { icon: '📜', name: "古文書の断片 V", desc: "【五つの断片が揃う時、真理の鍵への道は開く】", price: 1500, type: 'doc' },
+      'truth_key': { icon: '🗝️', name: "真理の鍵", desc: "究極の試練へ", price: 0, type: 'use', notForSale: false },
+      'col_globe': { icon: '🔮', name: "賢者の地球儀", desc: "博物館所蔵品", price: 1000, type: 'col' },
+      'col_map': { icon: '🗺️', name: "古の航海図", desc: "ボス泥(4%)", price: 0, type: 'col', notForSale: true }, 
+      'col_crown': { icon: '💎', name: "ジオ皇帝の冠", desc: "ボス泥(4%)", price: 0, type: 'col', notForSale: true }, 
+      'col_streak': { icon: '📅', name: "不変の友情", desc: "7日連続プレイ", price: 0, type: 'col', notForSale: true },
+      'col_nomiss': { icon: '🛡️', name: "アイギスの盾", desc: "ボスノーミス", price: 0, type: 'col', notForSale: true }
+    };
+
+    const PASSIVES = [
+      { id: 'p_time', name: "⏳ 時の砂時計", desc: "タイマー速度 0.8倍", price: 1500 },
+      { id: 'p_score', name: "👑 黄金の王冠", desc: "獲得スコア 1.2倍", price: 2000 },
+      { id: 'p_combo', name: "🔥 勇者の剣", desc: "コンボが2連続から発動", price: 1500 },
+      { id: 'p_shield', name: "🛡️ イージスの盾", desc: "ボスの選択肢が減少", price: 3000 }
+    ];
+
+    const MISSION_TYPES = [
+      { id: 'm_score', desc: "1回の冒険で1000pt獲得", target: 1000, reward: 150 },
+      { id: 'm_combo', desc: "3連続コンボを達成する", target: 1, reward: 90 },
+      { id: 'm_boss', desc: "ボスを1体倒す", target: 1, reward: 300 },
+      { id: 'm_survival', desc: "サバイバルを1回プレイ", target: 1, reward: 150 }
+    ];
+
+    const defaultData = { 
+      userId: "", nickname: "", score: 0, coins: 0, inventory: {}, collections: [], documents: [], 
+      lastDate: "", streak: 0, skills: [], countryStats: {}, missions: { date: "", list: [] },
+      survivalMaxWave: 0, survivalMaxCombo: 0, hasClearedPangea: false, refundedDocPrice: false 
+    };
+    
+    let userData = {};
+    let allData = []; let currentSessionData = []; let currentTarget = null; let mistakes = [];
+    let isAnswering = false; let currentWave = 0; const MAX_WAVE = 10;
+    
+    let timerInterval; let timeLeft = 100; 
+    let activeItemUI = null; 
+    let currentRunModifiers = {}; 
+
+    let tempRunScore = 0; let missCount = 0; let combo = 0;
+    let playMode = 'textToMap'; 
+    let isBossBattle = false; let isPangeaBattle = false; let isKeyActive = false;
+    let bossHP = 0; let bossPhase = 1; let MAX_BOSS_HP = 3; const MAX_PANGEA_HP = 5;
+    let isSurvival = false; let survivalLives = 3; let survivalSpeed = 1.0;
+    let oldSurvivalMaxWave = 0; 
+    let isPaused = false; 
+    let soundEnabled = false; let audioCtx = null;
+    const bgmAudio = document.getElementById('bgm-audio'); bgmAudio.volume = 0.2;
+
+    
+    let novelQueue = [];
+    let novelIndex = 0;
+    let novelCharIndex = 0;
+    let novelTimer = null;
+    let isNovelTyping = false;
+    let onNovelComplete = null;
+
+    
+    
+    
+    function preloadBossImages() {
+      Object.values(BOSS_IMAGES).forEach(url => {
+        if (url && url.trim() !== "") { const img = new Image(); img.src = url; }
+      });
+    }
+
+    function shootConfetti() {
+      if (typeof confetti !== 'undefined') {
+        var duration = 3 * 1000; var animationEnd = Date.now() + duration;
+        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000 };
+        function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+        var interval = setInterval(function() {
+          var timeLeft = animationEnd - Date.now();
+          if (timeLeft <= 0) return clearInterval(interval);
+          var particleCount = 50 * (timeLeft / duration);
+          confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+          confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
+      }
+    }
+
+    window.onload = () => {
+      let saved = localStorage.getItem(CURRENT_VERSION);
+      if (!saved) {
+        const oldKeys = ['geoGameV1.9.12', 'geoGameV1.9.11', 'geoGameV1.9.10', 'geoGameV1.9.9', 'geoGameV1.9.8', 'geoGameV1.9.7', 'geoGameV1.9.6', 'geoGameV1.9.5', 'geoGameV1.9.2', 'geoGameV1.8', 'geoGameV1.7', 'geoGameV1.6', 'geoGameV1.5', 'geoGameV1.2', 'geoGameV21'];
+        let oldData = null;
+        for(let key of oldKeys) { let data = localStorage.getItem(key); if(data) { oldData = JSON.parse(data); break; } }
+        userData = { ...defaultData, ...(oldData || {}) }; 
+      } else { 
+        userData = { ...defaultData, ...JSON.parse(saved) }; 
+      }
+      
+      if(!userData.documents) userData.documents = [];
+      if(!userData.survivalMaxWave) userData.survivalMaxWave = 0;
+      if(!userData.survivalMaxCombo) userData.survivalMaxCombo = 0;
+      if(userData.hasClearedPangea === undefined) userData.hasClearedPangea = false;
+      if(!userData.missions) userData.missions = { date: "", list: [] };
+
+      if (!userData.refundedDocPrice) {
+        let refundDocsCount = 0;
+        if (userData.documents && userData.documents.length > 0) { refundDocsCount = userData.documents.filter(d => d.startsWith('doc_')).length; }
+        if (refundDocsCount > 0) {
+          const refundAmount = refundDocsCount * 1500;
+          userData.coins += refundAmount;
+          alert(`【価格改定のお知らせ】\n古文書の断片が値下げされました！\nすでに購入済みの ${refundDocsCount} 枚分の差額として、🪙${refundAmount} コインを返還しました。`);
+        }
+        userData.refundedDocPrice = true;
+      }
+      
+      if (!userData.userId) userData.userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+      if (!userData.nickname) {
+        let name = prompt("ランキングに登録する名前を入力してください（10文字以内）");
+        userData.nickname = name ? name.trim().substring(0, 10) : "名無し勇者"; 
+      }
+
+      saveData(); checkStreak(); generateMissions(); preloadBossImages(); 
+
+      if(typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(data => { 
+          allData = data; 
+          document.getElementById('loading-screen').style.display = 'none';
+          document.getElementById('start-screen').style.display = 'block'; 
+          updateUI(); fetchRanking(); 
+        }).withFailureHandler(err => {
+          document.getElementById('loading-message').innerHTML = `<span style="color:red">⚠️ 通信エラー<br>${err.message}</span>`;
+        }).getMatchData();
+      } else {
+        document.getElementById('loading-screen').innerHTML = "<p style='color:black;'>⚠️ GAS環境外</p>";
+      }
+    };
+
+    function saveData() { localStorage.setItem(CURRENT_VERSION, JSON.stringify(userData)); updateUI(); }
+    function hasSkill(id) { return userData.skills.includes(id); }
+    function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
+    
+    function toggleSound() {
+      initAudio(); soundEnabled = !soundEnabled;
+      const btn = document.getElementById('sound-toggle-btn');
+      if(soundEnabled) {
+        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        if(bgmAudio.src) bgmAudio.play().catch(e => {});
+        btn.innerText = "🔊 サウンドON"; btn.classList.add('sound-on');
+      } else { bgmAudio.pause(); btn.innerText = "🔇 サウンドOFF"; btn.classList.remove('sound-on'); }
+    }
+    
+    function togglePause() {
+      if (document.getElementById('play-screen').style.display === 'none' || isAnswering) return;
+      isPaused = !isPaused;
+      document.getElementById('pause-overlay').style.display = isPaused ? 'flex' : 'none';
+    }
+
+    function openTransfer() { 
+      try { document.getElementById('export-code').value = btoa(encodeURIComponent(JSON.stringify(userData))); document.getElementById('import-code').value = ""; document.getElementById('transfer-modal').style.display = 'flex'; } catch (e) { alert("コードの生成に失敗しました。"); }
+    }
+    
+    function copyTransferCode() { 
+      const codeField = document.getElementById('export-code');
+      if(navigator.clipboard) {
+        navigator.clipboard.writeText(codeField.value).then(() => {
+          alert("📋 引継ぎコードをコピーしました！");
+        }).catch(() => { alert("コピーに失敗しました。手動でコピーしてください。"); codeField.select(); });
+      } else {
+        codeField.select(); document.execCommand('copy'); alert("📋 引継ぎコードをコピーしました！");
+      }
+    }
+    
+    function applyTransferCode() { 
+      const importStr = document.getElementById('import-code').value.trim();
+      if(!importStr || !confirm("現在のデータは失われます。復元しますか？")) return;
+      try { const parsed = JSON.parse(decodeURIComponent(atob(importStr))); if(parsed && parsed.nickname !== undefined) { userData = { ...defaultData, ...parsed }; saveData(); alert("復元成功！"); document.getElementById('transfer-modal').style.display = 'none'; } else alert("無効なコードです。"); } catch(e) { alert("コードの読み込みに失敗しました。"); }
+    }
+    function changeName() { let newName = prompt("新しい名前（10文字以内）", userData.nickname); if (newName !== null && newName.trim() !== "") { userData.nickname = newName.trim().substring(0, 10); saveData(); } }
+
+    function getRank(s) {
+      if (userData.hasClearedPangea) return "🌌 マスター・オブ・パンゲア";
+      if(s >= 1000000 && userData.collections.length >= Object.values(ITEMS).filter(i => i.type === 'col').length) return "🌌 アカシック・ジオ・クリエイター";
+      const rankData = [{pt:0,name:"👶 迷子の旅人"},{pt:15000,name:"🚶 新米冒険者"},{pt:30000,name:"🧭 見習い探索者"},{pt:45000,name:"🏇 熟練の騎士"},{pt:60000,name:"🦅 荒野の狩人"},{pt:75000,name:"⚔️ 歴戦の勇者"},{pt:105000,name:"🗺️ 凄腕の地図士"},{pt:135000,name:"🏰 偉大なる領主"},{pt:165000,name:"👑 伝説の王"},{pt:215000,name:"🐉 竜を狩る者"},{pt:265000,name:"🌍 世界覇者"},{pt:315000,name:"🌐 超古代の覇王"},{pt:400000,name:"✨ 次元の観測者"},{pt:750000,name:"♾️ ジオ・マスター"}];
+      for (let i = rankData.length - 1; i >= 0; i--) { if (s >= rankData[i].pt) return rankData[i].name; }
+      return rankData[0].name;
+    }
+
+    function checkStreak() {
+      const today = new Date().toLocaleDateString(); if (userData.lastDate === today) return;
+      const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
+      if (userData.lastDate === yesterday) userData.streak++; else userData.streak = 1;
+      userData.lastDate = today;
+      if (userData.streak >= 7 && !userData.collections.includes('col_streak')) userData.collections.push('col_streak');
+      saveData();
+    }
+
+    function checkPangeaConditions() {
+      if (!userData) return false;
+      if (userData.nickname === 'アゲナ３１') return true;
+
+      const totalColItems = Object.values(ITEMS).filter(i => i.type === 'col').length;
+      if (userData.score < 1000000 || userData.collections.length < totalColItems) return false;
+      if (!allData || allData.length === 0) return false;
+      const allMastered = allData.every(c => userData.countryStats[c.id] && userData.countryStats[c.id].c >= 10);
+      if (!allMastered) return false;
+      if (!userData.survivalMaxWave || userData.survivalMaxWave < 50) return false;
+      if (!userData.survivalMaxCombo || userData.survivalMaxCombo < 20) return false;
+      if (!userData.documents || userData.documents.length < 5) return false;
+      return true; 
+    }
+
+    function generateMissions() {
+      const today = new Date().toLocaleDateString();
+      if(userData.missions.date !== today) { 
+        let shuffled = MISSION_TYPES.sort(() => 0.5 - Math.random()).slice(0, 3); 
+        userData.missions.date = today; 
+        userData.missions.list = shuffled.map(m => ({ ...m, progress: 0, claimed: false })); 
+        saveData(); 
+      }
+    }
+
+    function updateMissions(id, amount, isMax = false) {
+      if(!userData.missions || !userData.missions.list) return;
+      let m = userData.missions.list.find(x => x.id === id);
+      if(m && !m.claimed) { if(isMax) { if(amount > m.progress) m.progress = amount; } else m.progress += amount; if(m.progress >= m.target) m.progress = m.target; saveData(); renderMissions(); }
+    }
+
+    function claimMission(idx) {
+      let m = userData.missions.list[idx];
+      if(m && m.progress >= m.target && !m.claimed) { m.claimed = true; userData.coins += m.reward; saveData(); alert(`達成報酬 🪙${m.reward} を受け取りました！`); }
+    }
+
+    // ==========================================
+    // ▼ UI更新と描画
+    // ==========================================
+    function updateUI() {
+      document.getElementById('player-name-display').innerText = userData.nickname; document.getElementById('score-display').innerText = userData.score.toLocaleString(); document.getElementById('coin-display').innerText = Math.floor(userData.coins); document.getElementById('streak-display').innerText = userData.streak;
+      const rankEl = document.getElementById('player-rank'); rankEl.innerText = getRank(userData.score);
+      if(rankEl.innerText.includes("🌌") || rankEl.innerText.includes("♾️")) { rankEl.style.background = "linear-gradient(to right, #ff0000, #4b0082, #9400d3)"; rankEl.style.webkitBackgroundClip = "text"; rankEl.style.color = "transparent"; } else { rankEl.style.background = "none"; rankEl.style.webkitBackgroundClip = "initial"; rankEl.style.color = "#ffd700"; }
+      const sl = document.getElementById('skills-list'); if(userData.skills.length > 0) sl.innerHTML = userData.skills.map(id => `<span class="skill-badge">${PASSIVES.find(p => p.id === id).name}</span>`).join(''); else sl.innerHTML = '<span style="color:#7f8c8d;">なし</span>';
+      renderGrids(); renderMissions();
+    }
+
+    function renderMissions() {
+      const mg = document.getElementById('mission-grid'); if(!mg) return; mg.innerHTML = ''; if(!userData.missions || !userData.missions.list) return;
+      userData.missions.list.forEach((m, idx) => {
+        let isClear = m.progress >= m.target; let btnHtml = "";
+        if (isClear && !m.claimed) btnHtml = `<button class="shop-btn" style="background:#2ecc71;" onclick="claimMission(${idx})">受取</button>`;
+        else if (m.claimed) btnHtml = `<button class="shop-btn" disabled style="background:#555;">達成済</button>`;
+        else btnHtml = `<span style="font-size:12px;font-weight:bold;color:#ccc;">${m.progress} / ${m.target}</span>`;
+        mg.innerHTML += `<div class="shop-item"><div><b>${m.desc}</b><br><small style="color:var(--coin);">報酬: 🪙${m.reward}</small></div><div>${btnHtml}</div></div>`;
+      });
+    }
+
+    function fetchRanking() {
+      if(typeof google === 'undefined') return;
+      google.script.run.withSuccessHandler(data => {
+        const list = document.getElementById('ranking-list'); list.innerHTML = '';
+        if(!data || data.length===0){ list.innerHTML = '<li>記録なし</li>'; return; }
+        const medals = ["🥇", "🥈", "🥉", "4位", "5位"];
+        data.forEach((p, i) => { list.innerHTML += `<li class="rank-item"><span>${medals[i]||i+1} ${p.name}</span><span>${p.score.toLocaleString()}pt</span></li>`; });
+      }).getTopRanking();
+    }
+
+    function showLibraryDetail(country) {
+      document.getElementById('lib-detail-name').innerText = country.name;
+      const mapUrl = country.map + (country.map.includes('?') ? '&' : '?') + 'cb=' + sessionTime;
+      document.getElementById('lib-detail-img').src = mapUrl;
+      document.getElementById('lib-detail-capital').innerText = country.capital || "データなし";
+      document.getElementById('lib-detail-feature').innerText = country.feature || "特徴データなし";
+      document.getElementById('lib-detail-trivia').innerText = country.trivia || country.feature || "豆知識データなし";
+      document.getElementById('library-detail-modal').style.display = 'flex';
+    }
+
+    function updateLibraryCard(d, c) {
+      const stats = userData.countryStats[c.id] || {c: 0, w: 0}; const isU = stats.c > 0;
+      d.setAttribute('data-c', stats.c);
+      let borderColor = "transparent"; let badgeHtml = "";
+      if (!isU) { borderColor = "#333"; } else if (stats.c >= 10) { borderColor = "#ffd700"; badgeHtml = `<div style="position:absolute; top:-5px; left:-5px; font-size:14px; text-shadow:1px 1px 1px #000;" title="マスター">👑</div>`; } else if (stats.c >= 5) { borderColor = "#c0c0c0"; badgeHtml = `<div style="position:absolute; top:-5px; left:-5px; font-size:14px; text-shadow:1px 1px 1px #000;" title="熟練">🥈</div>`; } else { borderColor = "#2ecc71"; }
+      d.style.borderColor = borderColor;
+      const imgS = isU ? "width:100%;height:35px;object-fit:contain;" : "width:100%;height:35px;object-fit:contain;filter:grayscale(1)brightness(0.2);opacity:0.5;";
+      const mapUrl = c.map + (c.map.includes('?') ? '&' : '?') + 'cb=' + sessionTime;
+      d.innerHTML = `${badgeHtml}<img src="${mapUrl}" style="${imgS}" onerror="this.style.display='none'"><div style="font-size:8px;${isU ? '' : 'color:#7f8c8d; margin-top:2px;'}">${c.name}</div><div style="font-size:8px; color:var(--accent); margin-top:1px; font-weight:bold;">${isU ? `正解: ${stats.c}回` : '未発見'}</div>`;
+      if (isU) { d.onclick = () => showLibraryDetail(c); } else { d.onclick = null; }
+    }
+
+    function renderGrids() {
+      const invG = document.getElementById('inv-grid'); invG.innerHTML = '';
+      Object.keys(ITEMS).forEach(id => {
+        if((ITEMS[id].type === 'use' || id === 'truth_key') && userData.inventory[id] > 0) {
+          const d = document.createElement('div'); d.className = `item-card ${activeItemUI===id?'selected':''}`;
+          d.onclick = () => { activeItemUI = (activeItemUI===id?null:id); updateUI(); };
+          d.innerHTML = `<span class="item-icon">${ITEMS[id].icon}</span><span style="font-size:8px;">${ITEMS[id].name}</span><span class="badge">x${userData.inventory[id]}</span>`;
+          invG.appendChild(d);
+        }
+      });
+      
+      const shopG = document.getElementById('shop-grid'); shopG.innerHTML = '';
+      Object.keys(ITEMS).forEach(id => {
+        const item = ITEMS[id];
+        if(item.notForSale) return; 
+
+        const isBoughtCol = (item.type==='col' && userData.collections.includes(id));
+        const isBoughtDoc = (item.type==='doc' && userData.documents && userData.documents.includes(id));
+        let isLocked = isBoughtCol || isBoughtDoc; let lockText = "";
+        
+        if (id === 'truth_key') { 
+          if (!checkPangeaConditions()) { isLocked = true; lockText = "🔒 資格なし"; } else { lockText = "🪙0"; } 
+        } else { lockText = `🪙${item.price}`; }
+        
+        const d = document.createElement('div'); d.className = `item-card ${isLocked ? 'locked' : ''}`; d.onclick = () => { if (!isLocked || id === 'truth_key') buyItem(id); };
+        d.innerHTML = `<span class="item-icon">${item.icon}</span><div style="font-weight:bold;font-size:11px;">${item.name}</div><div style="font-size:8px; color:#aaa; margin:2px 0;">${item.desc}</div><span class="item-price">${lockText}</span>`;
+        shopG.appendChild(d);
+      });
+      
+      const colG = document.getElementById('collection-grid'); colG.innerHTML = '';
+      const colConditions = {globe:"道具屋",map:"ボス撃破",crown:"ボス撃破",streak:"７日連続プレイ",nomiss:"ボスノーミス"};
+      Object.keys(ITEMS).forEach(id => {
+        if(ITEMS[id].type === 'col') {
+          const has = userData.collections.includes(id); const d = document.createElement('div'); d.className = `item-card ${has?'':'locked'}`;
+          const statusHtml = `<div style="font-size:9px; font-weight:bold; color:${has?'#fff':'#ccc'}; background:${has?'transparent':'rgba(0,0,0,0.6)'}; padding: 2px; border-radius: 4px; display: inline-block; margin-top:2px;">${has ? ITEMS[id].name : '🔒条件: ' + (colConditions[id.replace('col_','')]||'未知')}</div>`;
+          d.innerHTML = `<span class="item-icon">${has?ITEMS[id].icon:'❓'}</span>${statusHtml}`;
+          colG.appendChild(d);
+        }
+      });
+
+      const libG = document.getElementById('library-grid');
+      if (libG && allData.length > 0) {
+        const weakList = document.getElementById('weak-countries-list'); weakList.innerHTML = '';
+        let worst = allData.filter(c=>userData.countryStats[c.id]&&userData.countryStats[c.id].w>0).sort((a,b)=>userData.countryStats[b.id].w-userData.countryStats[a.id].w).slice(0,5);
+        if(worst.length===0) weakList.innerHTML='<li>まだありません</li>'; else worst.forEach((c,i)=>{const st=userData.countryStats[c.id]; weakList.innerHTML+=`<li>${i+1}.${c.name}(ミス:${st.w}回)</li>`;});
+        
+        if (libG.children.length === 0) { allData.forEach(c => { const d = document.createElement('div'); d.id = `lib-card-${c.id}`; d.className = 'item-card'; libG.appendChild(d); updateLibraryCard(d, c); }); }
+        else { allData.forEach(c => { const d = document.getElementById(`lib-card-${c.id}`); if (d) { const stats = userData.countryStats[c.id] || {c: 0, w: 0}; const prevC = parseInt(d.getAttribute('data-c') || '0', 10); if (prevC !== stats.c) { updateLibraryCard(d, c); } } }); }
+      }
+    }
+
+    function showSub(tab) { document.querySelectorAll('.sub-screen,.sub-content').forEach(s=>s.style.display='none'); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById('sub-'+tab).style.display='block'; event.currentTarget.classList.add('active'); }
+
+    function buyItem(id) {
+      const item = ITEMS[id]; 
+      if (item.notForSale && id !== 'truth_key') { alert("このアイテムは購入できません。"); return; } 
+      if (id === 'truth_key') { if (!checkPangeaConditions()) { alert("古文書の断片から導き出される全ての条件を満たさねば、真理の鍵は姿を現さない...。\n(スコア, コレクション, 全国習熟, サバイバルの限界に挑め！)"); return; } }
+      if(userData.coins < item.price) { alert("コイン不足"); return; }
+      if(item.type === 'col' && userData.collections.includes(id)) { alert("所持済"); return; }
+      if(item.type === 'doc' && userData.documents && userData.documents.includes(id)) { alert("所持済"); return; }
+      
+      let msg = item.price > 0 ? `${item.name}を購入しますか？(🪙${item.price})` : `${item.name}を入手しますか？`;
+      if(confirm(msg)){
+        userData.coins -= item.price; 
+        if(item.type === 'use' || item.type === 'key') { userData.inventory[id] = (userData.inventory[id] || 0) + 1; }
+        else if (item.type === 'doc') { if (!userData.documents) userData.documents = []; userData.documents.push(id); }
+        else { userData.collections.push(id); }
+        saveData();
+      }
+    }
+
+    function openSkillShop() { 
+      document.getElementById('shop-score-display').innerText = userData.score.toLocaleString();
+      const container = document.getElementById('shop-items-container'); container.innerHTML = '';
+      PASSIVES.forEach(s => { const isO = hasSkill(s.id); const canA = userData.score >= s.price; container.innerHTML += `<div class="shop-item"><div><b>${s.name}</b><br><small>${s.desc}</small></div><button class="shop-btn" ${isO?'disabled':(canA?'':'disabled')} onclick="buySkill('${s.id}',${s.price})">${isO?'所持済':s.price.toLocaleString()+'pt'}</button></div>`; });
+      document.getElementById('skill-shop-modal').style.display = 'flex';
+    }
+
+    function buySkill(id, price) { if (userData.score >= price && !hasSkill(id)) { if(confirm("スコアを消費してスキルを解放しますか？")){ userData.score-=price; userData.skills.push(id); saveData(); openSkillShop(); } } }
+
+
+    // ==========================================
+    // ▼ ノベルシステムエンジン
+    // ==========================================
+    function startNovel(scenarioArray, onComplete) {
+      novelQueue = scenarioArray;
+      novelIndex = 0;
+      onNovelComplete = onComplete;
+      document.getElementById('novel-modal').style.display = 'flex';
+      showNovelPage();
+    }
+
+    function showNovelPage() {
+      if (novelIndex >= novelQueue.length) {
+        document.getElementById('novel-modal').style.display = 'none';
+        document.getElementById('novel-background').style.display = 'none';
+        if (onNovelComplete) onNovelComplete();
+        return;
+      }
+      const page = novelQueue[novelIndex];
+      
+      const speakerEl = document.getElementById('novel-speaker');
+      if (page.speaker) {
+        speakerEl.style.display = 'block';
+        speakerEl.innerText = page.speaker;
+      } else {
+        speakerEl.style.display = 'none';
+      }
+
+      const imgEl = document.getElementById('novel-image');
+      if (page.img) {
+        imgEl.style.display = 'block';
+        imgEl.src = page.img;
+      } else {
+        imgEl.style.display = 'none';
+      }
+
+      const bgEl = document.getElementById('novel-background');
+      if (page.bg) {
+        bgEl.style.display = 'block';
+        bgEl.src = page.bg;
+      } else {
+        bgEl.style.display = 'none';
+      }
+
+      document.getElementById('novel-text').innerHTML = "";
+      document.getElementById('novel-next-icon').style.display = 'none';
+      novelCharIndex = 0;
+      isNovelTyping = true;
+      clearInterval(novelTimer);
+      novelTimer = setInterval(typeWriter, 35); 
+    }
+
+    function typeWriter() {
+      const text = novelQueue[novelIndex].text;
+      if (novelCharIndex < text.length) {
+        document.getElementById('novel-text').textContent += text.charAt(novelCharIndex);
+        novelCharIndex++;
+      } else {
+        isNovelTyping = false;
+        clearInterval(novelTimer);
+        document.getElementById('novel-next-icon').style.display = 'block';
+      }
+    }
+
+    function handleNovelTap() {
+      if (isNovelTyping) {
+        clearInterval(novelTimer);
+        isNovelTyping = false;
+        document.getElementById('novel-text').textContent = novelQueue[novelIndex].text;
+        document.getElementById('novel-next-icon').style.display = 'block';
+      } else {
+        document.getElementById('novel-next-icon').style.display = 'none';
+        novelIndex++;
+        showNovelPage();
+      }
+    }
+
+
+    // ==========================================
+    // ▼ ゲームループ
+    // ==========================================
+    function startRun(mode) {
+      if(allData.length===0) return;
+      playMode = mode; currentWave = 0; tempRunScore = 0; missCount = 0; combo = 0; mistakes = []; isPaused = false;
+      isBossBattle = false; isPangeaBattle = false; isKeyActive = false;
+      isSurvival = (mode === 'survival'); survivalLives = 3; survivalSpeed = 1.0;
+      
+      document.getElementById('damage-overlay').style.opacity = 0;
+      document.getElementById('game-outer').classList.remove('heartbeat-active');
+      oldSurvivalMaxWave = userData.survivalMaxWave || 0; 
+      
+      if (isSurvival) updateMissions('m_survival', 1);
+
+      let cand = allData; const d = document.getElementById('difficulty-select').value; const r = document.getElementById('region-select').value;
+      if(d!=='all') cand=cand.filter(x=>x.difficulty===d); if(r!=='all') cand=cand.filter(x=>x.region===r);
+      
+      if (!isSurvival) {
+        if (mode === 'textToMap' || mode === 'mapToText' || mode === 'mapOnlyToText') { cand = cand.filter(x => x.map && x.map.trim() !== ""); } 
+        else if (mode === 'specialtyToText') { cand = cand.filter(x => x.feature && x.feature.trim() !== "" && x.feature !== "特徴データなし"); }
+        else if (mode === 'capitalMode') { cand = cand.filter(x => x.capital && x.capital.trim() !== "" && x.capital !== "首都データなし"); }
+      } else { 
+        cand = cand.filter(x => (x.map && x.map.trim() !== "") || (x.feature && x.feature.trim() !== "" && x.feature !== "特徴データなし")); 
+      }
+      
+      if (cand.length < 4) { alert("条件に合うデータが不足しています。"); return; }
+      currentSessionData = cand;
+      
+      currentRunModifiers = {}; 
+      if(activeItemUI && ['time','score','shield','life','hammer','truth_key'].includes(activeItemUI)){ 
+        currentRunModifiers[activeItemUI] = true;
+        if (activeItemUI === 'truth_key') { isKeyActive = true; } 
+        userData.inventory[activeItemUI]--; 
+        activeItemUI = null; 
+        updateUI(); 
+      }
+
+      document.getElementById('start-screen').style.display = 'none'; document.getElementById('play-screen').style.display = 'flex';
+      document.getElementById('withdraw-btn').style.display = isSurvival ? 'none' : 'block';
+      nextWave();
+    }
+
+    function nextWave() {
+      currentWave++; isAnswering = false; 
+      document.body.className = ""; document.getElementById('game-outer').className = "";
+      document.getElementById('timer-container').style.display = 'block';
+      document.getElementById('feedback').innerText = "";
+      document.getElementById('boss-image-display').style.display = 'none';
+      document.getElementById('combo-display').style.display = 'none';
+      
+      if(!isSurvival && currentWave > MAX_WAVE){ if (isKeyActive) { triggerPangea(); } else { triggerBoss(); } return; }
+      
+      if (isSurvival) {
+        let livesStr = ""; for(let i=0; i<survivalLives; i++) livesStr += "❤️";
+        let bestStr = `<div style="font-size:10px; color:#aaa; font-weight:normal;">自己ベスト: ${userData.survivalMaxWave}波 / 最大コンボ: ${userData.survivalMaxCombo}</div>`;
+        document.getElementById('wave-display').innerHTML = `サバイバル WAVE ${currentWave} <span style="font-size:12px; margin-left:10px;">${livesStr}</span>${bestStr}`;
+        survivalSpeed += 0.05; 
+        const modes = ['textToMap', 'mapToText', 'mapOnlyToText', 'specialtyToText', 'capitalMode'];
+        playMode = modes[Math.floor(Math.random() * modes.length)];
+      } else {
+        document.getElementById('wave-display').innerText = `WAVE ${currentWave} / ${MAX_WAVE}`;
+      }
+      setupQuestion(false);
+    }
+
+    function getBossImage() { const diff = document.getElementById('difficulty-select').value; if(diff==='初級')return Math.random()<0.5?BOSS_IMAGES.beginner1:BOSS_IMAGES.beginner2; return BOSS_IMAGES.advanced;}
+
+    function triggerBoss() { 
+      isBossBattle = true; isAnswering = true; 
+      MAX_BOSS_HP = (currentRunModifiers['hammer'] ? 2 : 3); 
+      if(currentRunModifiers['hammer']) delete currentRunModifiers['hammer']; 
+      
+      bossHP = MAX_BOSS_HP; bossPhase = 1; 
+      
+      const bossImg = getBossImage();
+      document.getElementById('boss-image-display').src = bossImg;
+      document.getElementById('warning-boss-image').src = bossImg;
+      
+      document.getElementById('boss-warning-screen').style.display = 'flex';
+    }
+
+    document.getElementById('start-boss-btn').addEventListener('click', function() {
+      document.getElementById('boss-warning-screen').style.display = 'none'; document.body.classList.add('boss-mode-active');
+      document.getElementById('boss-hp-container').style.display = 'block';
+      const b=document.getElementById('boss-image-display'); b.style.display='inline-block'; 
+      document.getElementById('hp-label').innerText = "BOSS HP"; document.getElementById('boss-hp-fill').classList.remove('pangea-hp');
+      document.getElementById('withdraw-btn').style.display='none'; updateHPBar(bossHP, MAX_BOSS_HP); setupQuestion(true);
+    });
+
+    function triggerPangea() { 
+      isBossBattle = false; isPangeaBattle = true; isAnswering = true; bossHP = MAX_PANGEA_HP;
+      const b = document.getElementById('boss-image-display'); b.style.display='inline-block'; b.src=BOSS_IMAGES.legendary;
+      document.getElementById('warning-pangea-image').src = BOSS_IMAGES.legendary;
+
+      // ▼ 警告画面（特異点検知）
+      document.getElementById('pangea-modal').style.display = 'flex'; document.getElementById('hp-label').innerText = "PANGEA HP";
+      document.getElementById('boss-hp-fill').classList.add('pangea-hp'); updateHPBar(bossHP, MAX_PANGEA_HP);
+      setTimeout(() => { 
+        document.getElementById('pangea-modal').style.display = 'none'; 
+        
+        // ▼ ノベルエンジンによるパンゲア登場演出
+        const scenario = [
+          { speaker: "キャプテン・パンゲア", img: BOSS_IMAGES.legendary, bg: null, text: "よくぞここまで辿り着きました。" },
+          { speaker: "キャプテン・パンゲア", img: BOSS_IMAGES.legendary, bg: null, text: "……ですが、私の導き出した理論は揺るぎません。\n世界を再び単一の大地――『超大陸パンゲア』へと回帰させ、混沌とした文明を再定義（リブート）する。それがこの星にとっての最善解です。" },
+          { speaker: "キャプテン・パンゲア", img: BOSS_IMAGES.legendary, bg: null, text: "もし、この分かたれた世界にまだ多様性が必要だというなら、あなたの『知性』という名の証明で、私の絶対数式（ジオ・ロジック）を覆してみせなさい。" },
+          { speaker: "キャプテン・パンゲア", img: BOSS_IMAGES.legendary, bg: null, text: "さあ、光の届かぬ漆黒の深淵――『アトラス・オルタ』へと沈みなさい。" }
+        ];
+        
+        startNovel(scenario, () => {
+          document.body.className = "pangea-mode-active mut-pangea"; 
+          document.getElementById('wave-display').innerText = `🌐 超古代パンゲア 🌐`; 
+          currentSessionData = allData.filter(x => x.map && x.map.trim() !== ""); 
+          setupQuestion(true);
+        });
+      }, 3000); // パンゲア警告画面の表示時間を少し短縮してテンポアップ
+    }
+
+    function updateHPBar(current, max) { document.getElementById('boss-hp-fill').style.width = (current / max * 100) + '%'; }
+
+    function applyBossPhase() {
+      if(isPangeaBattle) return; document.body.className = "boss-mode-active"; 
+      let t="👿 第1形態 👿"; if(bossPhase===2){t="👿 反転 👿"; document.body.classList.add('mut-invert');}
+      if(bossPhase===3){t="👿 暗闇 👿"; document.body.classList.add('mut-blind');}
+      document.getElementById('wave-display').innerText = t;
+    }
+
+    function setupQuestion(isBossEvent) {
+      isAnswering = false; let validCand = currentSessionData;
+      if (playMode === 'textToMap' || playMode === 'mapToText' || playMode === 'mapOnlyToText') { validCand = validCand.filter(x => x.map && x.map.trim() !== ""); } else if (playMode === 'specialtyToText') { validCand = validCand.filter(x => x.feature && x.feature.trim() !== "" && x.feature !== "特徴データなし"); } else if (playMode === 'capitalMode') { validCand = validCand.filter(x => x.capital && x.capital.trim() !== "" && x.capital !== "首都データなし"); }
+      if (validCand.length === 0) validCand = currentSessionData;
+      
+      currentTarget = validCand[Math.floor(Math.random() * validCand.length)];
+      const label = document.getElementById('target-label'); const img = document.getElementById('target-image'); const loadText = document.getElementById('image-loading-text'); const mapCont = document.getElementById('map-container');
+      
+      mapCont.style.display = 'none'; img.style.display = 'none'; loadText.style.display = 'none'; label.className = ""; label.style.fontSize = "";
+      img.classList.remove('hide-right-half'); document.body.classList.remove('map-only-mode');
+
+      const currentMapUrl = currentTarget.map + (currentTarget.map.includes('?') ? '&' : '?') + 'cb=' + sessionTime;
+
+      if(playMode === 'textToMap') { label.innerText = currentTarget.name; }
+      else if(playMode === 'mapToText' || playMode === 'mapOnlyToText') { 
+        label.innerText = isPangeaBattle ? "全てを識る者よ" : (isBossEvent ? "標的を撃て" : "ここはどこ？");
+        mapCont.style.display = 'block'; loadText.style.display = 'block';
+        if(playMode === 'mapOnlyToText') { img.classList.add('hide-right-half'); document.body.classList.add('map-only-mode'); loadText.innerText = "🔍 地図を抽出中..."; } else { loadText.innerText = "🌍 受信中..."; }
+        img.onload = () => { loadText.style.display = 'none'; img.style.display = 'block'; }; img.onerror = () => { loadText.innerText = "⚠️ 画像切れ"; }; img.src = currentMapUrl; 
+      }
+      else if(playMode === 'specialtyToText') { label.innerText = currentTarget.feature; label.className = "feature-text-box"; if(label.innerText.length > 40) label.style.fontSize = "16px"; }
+      else if(playMode === 'capitalMode') {
+        label.innerText = isPangeaBattle ? "王都を導き出せ" : currentTarget.name;
+        mapCont.style.display = 'block'; loadText.style.display = 'block';
+        img.onload = () => { loadText.style.display = 'none'; img.style.display = 'block'; }; img.onerror = () => { loadText.innerText = "⚠️ 画像切れ"; }; img.src = currentMapUrl; 
+      }
+
+      let tC=4; 
+      if(isBossEvent){ 
+        let r = (hasSkill('p_shield') ? 2 : 0) + (currentRunModifiers['shield'] ? 2 : 0); 
+        tC = Math.max(4, 8 - r); 
+      }
+      let maxO = Math.min(tC, validCand.length);
+      let curO = [currentTarget]; while(curO.length<maxO){ let rC=validCand[Math.floor(Math.random()*validCand.length)]; if(!curO.some(o=>o.id===rC.id)) curO.push(rC); }
+      curO.sort(()=>Math.random()-0.5); const grid = document.getElementById('grid-options'); grid.innerHTML = '';
+      curO.forEach(c => {
+        const cMapUrl = c.map + (c.map.includes('?') ? '&' : '?') + 'cb=' + sessionTime;
+        const d = document.createElement('div'); d.className='card'; d.onclick=()=>checkAnswer(c,d);
+        if(playMode==='textToMap') {
+          d.innerHTML=`<img src="${cMapUrl}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><div class="card-text" style="display:none;color:red;font-size:10px;">NO IMAGE</div>`; 
+        } else if (playMode === 'capitalMode') {
+          d.innerHTML=`<div class="card-text">${c.capital || "首都不明"}</div>`;
+        } else { 
+          d.innerHTML=`<div class="card-text">${c.name}</div>`; 
+        }
+        grid.appendChild(d);
+      });
+      if(isBossBattle) applyBossPhase(); startTimer(); if (isBossBattle || isPangeaBattle) window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval); timeLeft = 100;
+      const fill = document.getElementById('timer-fill'); fill.style.width = '100%'; fill.classList.remove('timer-danger');
+      let speed = 1.0; 
+      if(currentRunModifiers['time']) speed*=0.7; 
+      if(hasSkill('p_time')) speed*=0.8;
+      
+      if(isBossBattle){ if(bossPhase===2)speed*=1.4; if(bossPhase===3)speed*=1.7; }
+      if(isPangeaBattle)speed*=2.0; if(isSurvival)speed*=survivalSpeed;
+      
+      timerInterval = setInterval(() => { 
+        if(isAnswering || isPaused) return; 
+        timeLeft -= speed; fill.style.width = timeLeft + "%"; 
+        if(timeLeft < 30) fill.classList.add('timer-danger'); 
+        if(timeLeft <= 0){ clearInterval(timerInterval); handleWrong(null); } 
+      }, 100);
+    }
+
+    function checkAnswer(s,e) { if(isAnswering || isPaused)return; isAnswering=true; clearInterval(timerInterval); if(s.id===currentTarget.id)handleCorrect(e); else handleWrong(e); }
+
+    function handleCorrect(card) {
+      if(card) card.style.borderColor = "var(--selected)";
+      if(!userData.countryStats[currentTarget.id]) userData.countryStats[currentTarget.id] = {c:0, w:0};
+      userData.countryStats[currentTarget.id].c++;
+      
+      let pts = (isBossBattle || isPangeaBattle) ? 500 : 100;
+      if (isSurvival) pts = 100 + (currentWave * 10);
+      if(timeLeft > 70) pts += ((isBossBattle || isPangeaBattle) ? 200 : 100);
+      
+      combo++; const cR = hasSkill('p_combo') ? 2 : 3;
+      if(combo >= cR && !isBossBattle && !isPangeaBattle){ 
+        pts = Math.floor(pts * 1.5); const cd = document.getElementById('combo-display');
+        cd.style.display = 'block'; cd.innerText = `${combo}COMBO!`; cd.classList.remove('combo-pop'); void cd.offsetWidth; cd.classList.add('combo-pop');
+      }
+
+      if(combo >= 3) updateMissions('m_combo', 1, true); 
+      
+      if (isSurvival) {
+        if (typeof userData.survivalMaxCombo === 'undefined') userData.survivalMaxCombo = 0;
+        if (typeof userData.survivalMaxWave === 'undefined') userData.survivalMaxWave = 0;
+        if (combo > userData.survivalMaxCombo) userData.survivalMaxCombo = combo;
+        if (currentWave > userData.survivalMaxWave) userData.survivalMaxWave = currentWave;
+      }
+      
+      if(currentRunModifiers['score']) pts = Math.floor(pts * 1.2); 
+      if(hasSkill('p_score')) pts = Math.floor(pts * 1.2); 
+      if(isPangeaBattle) pts *= 2; 
+      tempRunScore += pts;
+      
+      const capInfo = currentTarget.capital && currentTarget.capital !== "首都データなし" ? `【首都: ${currentTarget.capital}】 ` : "";
+      const triviaText = capInfo + (currentTarget.trivia || currentTarget.feature || "よく復習しておこう！");
+
+      if(isBossBattle || isPangeaBattle){
+        bossHP--; updateHPBar(bossHP, isPangeaBattle ? MAX_PANGEA_HP : MAX_BOSS_HP);
+        if(bossHP > 0){ if(isBossBattle) bossPhase++; document.getElementById('feedback').innerText = `💥HIT!`; setTimeout(() => setupQuestion(true), 800); } else {
+          document.getElementById('feedback').innerText = `🏆ボス撃破！🎉ゲームクリア！`; shootConfetti(); updateMissions('m_boss', 1); 
+          if(isPangeaBattle) { setTimeout(showEpilogue, 1500); } else { setTimeout(() => processLootAndEnd(true), 1500); }
+        }
+      } else {
+        document.getElementById('feedback').innerHTML = `⭕ 正解! +${Math.floor(pts)}pt<br><span style="font-size:12px; color:#bdc3c7; font-weight:normal; text-shadow:none;">💡 メモ: ${triviaText}</span>`; setTimeout(nextWave, 1800);
+      }
+    }
+
+    function handleWrong(card) {
+      const outer=document.getElementById('game-outer'); outer.classList.remove('shake-active'); void outer.offsetWidth; outer.classList.add('shake-active'); if(card)card.style.borderColor="var(--danger)";
+      combo=0; document.getElementById('combo-display').style.display='none'; missCount++;
+      if(currentTarget){ if(!mistakes.some(m=>m.id===currentTarget.id))mistakes.push(currentTarget); if(!userData.countryStats[currentTarget.id])userData.countryStats[currentTarget.id]={c:0,w:0}; userData.countryStats[currentTarget.id].w++; }
+      
+      if(currentRunModifiers['life']){ 
+        delete currentRunModifiers['life']; 
+        document.getElementById('feedback').innerText="💖身代わり!"; 
+        setTimeout(()=>setupQuestion(isBossBattle||isPangeaBattle),1000); return; 
+      }
+      
+      const correctText = playMode === 'capitalMode' ? (currentTarget.capital || currentTarget.name) : (currentTarget?currentTarget.name:'');
+
+      if (isSurvival) {
+        survivalLives--;
+        let damageOp = (3 - survivalLives) * 0.4;
+        document.getElementById('damage-overlay').style.opacity = damageOp;
+        
+        if(soundEnabled && audioCtx && audioCtx.state === 'running') {
+          try {
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(40, audioCtx.currentTime);
+            gain.gain.setValueAtTime(1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+          } catch(e) {}
+        }
+        if(navigator.vibrate) navigator.vibrate([200, 100, 300]);
+        
+        if (survivalLives === 1) { document.getElementById('game-outer').classList.add('heartbeat-active'); }
+
+        document.getElementById('feedback').innerText=`💀残念...正解は ${correctText}`;
+        if (survivalLives > 0) { setTimeout(nextWave, 1500); } else { setTimeout(()=>endRun(false, true), 1500); }
+        return;
+      }
+
+      document.getElementById('feedback').innerText=`💀残念...正解は ${correctText}`; setTimeout(()=>endRun(false),1500);
+    }
+
+    function processLootAndEnd(isClear) {
+      let earnedC = Math.min(Math.floor(tempRunScore*0.1), 50); userData.score+=tempRunScore; userData.coins+=earnedC;
+      let dropM = `スコア:${Math.floor(tempRunScore).toLocaleString()}\nコイン:🪙${earnedC}`; let showT = false;
+      if(isClear&&missCount===0&&!userData.collections.includes('col_nomiss')){ userData.collections.push('col_nomiss'); dropM+=`\n\n🛡️称号『アイギスの盾』獲得!`; showT=true; }
+      if(isClear&&(isBossBattle||isPangeaBattle)){
+        const r=Math.random();
+        if(r<0.04&&!userData.collections.includes('col_crown')){ userData.collections.push('col_crown'); dropM+=`\n\n👑レア『ジオ皇帝の冠』!`; showT=true; }
+        else if(r>=0.04&&r<0.08&&!userData.collections.includes('col_map')){ userData.collections.push('col_map'); dropM+=`\n\n📜レア『古の航海図』!`; showT=true; }
+      }
+      
+      updateMissions('m_score', tempRunScore, true);
+      saveData(); if(typeof google!=='undefined')google.script.run.saveScore(userData.userId, userData.nickname, userData.score);
+      if(showT){ document.getElementById('treasure-text').innerText=dropM; document.getElementById('treasure-modal').style.display='flex'; } else { alert(`${isClear?'🎉クリア!':'終了'}\n${dropM}`); checkReview(); }
+    }
+
+    function showSurvivalResult() {
+      let achieved = currentWave - 1; 
+      let diff = oldSurvivalMaxWave - achieved;
+      let msg = "";
+      if (achieved > oldSurvivalMaxWave) {
+          msg = `🎉 新記録達成！ 🎉\n自己ベスト更新: ${achieved} 問\n見事な集中力です！`;
+      } else if (diff > 0) {
+          msg = `よく頑張りました！\n今回の記録: ${achieved} 問\n自己ベスト(${oldSurvivalMaxWave}問)まで、あと ${diff} 問でした！惜しい！`;
+      } else if (diff === 0 && achieved > 0) {
+          msg = `素晴らしい！\n自己ベストタイ記録(${achieved}問)です！\nあと1問で新記録でした！`;
+      } else {
+          msg = `今回の記録: ${achieved} 問\n次はもっといけるはず！`;
+      }
+      
+      document.getElementById('treasure-text').innerText = `🔥 サバイバル結果 🔥\n\n${msg}\n\n獲得スコア: ${Math.floor(tempRunScore).toLocaleString()}\n獲得コイン: 🪙${Math.min(Math.floor(tempRunScore*0.1), 50)}`;
+      document.getElementById('treasure-modal').style.display = 'flex';
+    }
+
+    function endRun(isClear, isSurvivalDeath = false) {
+      isAnswering=true; clearInterval(timerInterval); document.getElementById('feedback').innerText="整理中..."; 
+      
+      currentRunModifiers = {}; 
+
+      if(!isClear&&tempRunScore>0){
+        if (isSurvival) { userData.score += tempRunScore; userData.coins += Math.min(Math.floor(tempRunScore*0.1), 50); } 
+        else { userData.score += Math.floor(tempRunScore*0.5); userData.coins += Math.min(Math.floor(tempRunScore*0.05),20); }
+        updateMissions('m_score', tempRunScore, true); 
+        saveData(); if(typeof google!=='undefined')google.script.run.saveScore(userData.userId, userData.nickname, userData.score); 
+      }
+      
+      if(isClear&&(isBossBattle||isPangeaBattle)) {
+        processLootAndEnd(true); 
+      } else if (isSurvivalDeath) {
+        showSurvivalResult(); 
+      } else { 
+        saveData(); setTimeout(checkReview,500); 
+      }
+    }
+
+    function showEpilogue() { 
+      userData.hasClearedPangea = true; 
+      saveData(); 
+      
+      // ▼ ノベルエンジンによるエピローグ演出（画像はシングルでもダブルでもOKです）
+      const scenario = [
+        { speaker: "キャプテン・パンゲア", img: BOSS_IMAGES.legendary, bg: null, text: "「……計算外でしたね。君という知性が、私の論理（エゴ）を上回るとは。見事な解答でした、新たな時代の航海士よ。」" },
+        { speaker: "", img: BOSS_IMAGES.legendary2, bg: null, text: "キャプテン・パンゲアは穏やかな微笑を浮かべ、静かにその手を下ろした。\nその手から離れた直後の巨大なオールは、重力に従いながらも、どこか役目を終えたように静かに沈んでいく。" },
+        { speaker: "", img: BOSS_IMAGES.legendary3, bg: null, text: "その瞬間、君の頭脳から溢れ出した「完璧なる地理の知識」が、眩い光の粒子となって、崩壊しかけていた地球のコアへと注ぎ込まれた！" },
+        { speaker: "", img: BOSS_IMAGES.legendary4, bg: null, text: "衝突しかけていた大陸は、君が知識という名の「楔（アンカー）」を打ったことで、数ミリの狂いもなく元の位置へと固定されていく。\n混ざり合っていた大地は、再び君の知る「現在の美しい世界地図」へと戻っていった。" },
+        { speaker: "", img: BOSS_IMAGES.legendary5, bg: null, text: "世界中の国々を巡り、その全てを深く理解した君だからこそ、この世界の崩壊を防ぐことができたのだ。\n星の記憶は再び世界に深く刻み込まれ、不安定だった地場は、かつてないほどに静まり返った。" },
+        { speaker: "", img: BOSS_IMAGES.legendary5, bg: null, text: "そう、君が解き明かした一問一問は、単なる暗記ではない。\nこの地球（ほし）の未来を繋ぎ止めるための、『絶対的な真理（アルティメット・テイル）』だったのだ！" },
+        { speaker: "", img: BOSS_IMAGES.legendary6, bg: null, text: "おめでとう。君はもう、ただの生徒（旅人）ではない。\n全ての地理的記憶を再構築する、星の守護者――\n\n『マスター・オブ・パンゲア』だ！" }
+      ];
+
+      startNovel(scenario, () => {
+        processLootAndEnd(true);
+      });
+    }
+
+    function closeTreasure() { document.getElementById('treasure-modal').style.display='none'; checkReview(); }
+    function closeReview() { document.getElementById('review-modal').style.display='none'; resetToTitle(); }
+
+    function checkReview() { 
+      if(mistakes.length>0){ 
+        document.getElementById('review-list').innerHTML = mistakes.map(m => `
+          <div class="review-item">
+            <img src="${m.map}" onerror="this.style.display='none'">
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-weight:bold;font-size:12px;">${m.name}</span>
+              <span style="font-size:9px; color:#e67e22;">首都: ${m.capital || '不明'}</span>
+            </div>
+          </div>
+        `).join(''); 
+        document.getElementById('review-modal').style.display='flex'; 
+      } else {
+        resetToTitle(); 
+      }
+    }
+    
+    function resetToTitle() {
+      document.getElementById('play-screen').style.display='none'; document.getElementById('start-screen').style.display='block';
+      document.getElementById('boss-hp-container').style.display='none'; document.getElementById('boss-image-display').style.display='none'; document.getElementById('combo-display').style.display='none'; document.getElementById('feedback').innerText=""; document.getElementById('withdraw-btn').style.display='block'; 
+      document.body.className=""; document.getElementById('game-outer').className=""; 
+      document.getElementById('damage-overlay').style.opacity = 0; document.getElementById('game-outer').classList.remove('heartbeat-active');
+      updateUI(); fetchRanking();
+    }
+  </script>
+
+</body></html>
